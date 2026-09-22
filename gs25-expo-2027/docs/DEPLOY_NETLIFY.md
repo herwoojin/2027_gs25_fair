@@ -90,10 +90,24 @@ Netlify → **Site configuration → Environment variables** 에서 등록합니
 
 | 증상 | 원인 | 해결 |
 |---|---|---|
-| 전 경로 404 | `netlify.toml` 이 루트에 없음 / Base directory 미설정 | 루트 `netlify.toml` 확인 |
-| 전 경로 404 | Publish directory 를 `.next` 로 지정 | UI 에서 **비우기** |
-| 빌드는 성공인데 404 | Next.js Runtime 미적용 | 배포 로그에서 `Next.js Runtime` 문구 확인 |
-| `/` 는 되는데 `/api/*` 만 404 | 서버리스 함수 미생성 | 동일 — Runtime 확인 |
+| 전 경로 404 | `netlify.toml` 이 루트에 없음 | 루트에 두기 |
+| 전 경로 404 | UI 에 Publish directory 가 설정됨 (`publishOrigin: ui`) | **UI 에서 비우기** |
+| 빌드 성공인데 404 | 로그에 `Installing plugins` 가 없음 = Next.js Runtime 미적용 | `netlify.toml` 의 `[[plugins]]` 확인 |
+| `PHONE_ENC_KEY ... 설정되지 않았습니다` 로 빌드 실패 | 런타임 시크릿이 빌드 타임에 요구됨 | 해결됨(사용 시점 검사로 변경). 그래도 런타임에는 필요하므로 환경변수 등록 필수 |
+
+### UI 설정에서 반드시 비워야 하는 항목
+
+Netlify UI 값은 `netlify.toml` 보다 **우선**합니다.
+**Site configuration → Build & deploy → Build settings** 에서:
+
+| 항목 | 값 |
+|---|---|
+| Base directory | 비움 (또는 `gs25-expo-2027`) |
+| Build command | 비움 (또는 `npm run build`) |
+| **Publish directory** | **반드시 비움** |
+
+배포 로그의 `publishOrigin: ui` 는 UI 값이 덮어쓰고 있다는 뜻입니다.
+비우면 `publishOrigin` 이 사라지고 Next.js Runtime 이 알아서 설정합니다.
 
 배포 로그(**Deploys → 해당 배포 → Deploy log**)에서 아래 두 줄이 보여야 정상입니다.
 

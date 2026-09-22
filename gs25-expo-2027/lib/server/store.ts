@@ -142,22 +142,42 @@ interface DB {
 
 // ── 암호화 유틸 (T1-1) ───────────────────────────────────────────────
 // 아래 기본값은 **로컬 개발 전용**이다. 저장소에 공개되어 있으므로 운영에서 쓰이면 안 된다.
-if (process.env.NODE_ENV === 'production' && (!process.env.PHONE_ENC_KEY || !process.env.PHONE_HMAC_KEY)) {
+//
+// ⚠️ 검사는 반드시 **사용 시점**에 한다.
+//    모듈 최상위에서 throw 하면 Next.js 빌드의 "Collecting page data" 단계에서
+//    라우트를 import 하는 것만으로 빌드가 실패한다(빌드 머신에는 런타임 시크릿이 없다).
+const DEV_ENC_KEY = 'dev-only-phone-enc-key-change-me';
+const DEV_HMAC_KEY = 'dev-only-hmac-key-change-me';
+
+function assertKeysInProduction() {
+  if (process.env.NODE_ENV !== 'production') return;
+  if (process.env.PHONE_ENC_KEY && process.env.PHONE_HMAC_KEY) return;
   throw new Error(
     'PHONE_ENC_KEY / PHONE_HMAC_KEY 가 설정되지 않았습니다. ' +
-      '운영에서는 Secret Manager 값을 반드시 주입해야 합니다(기본값은 공개되어 있어 사용 불가).',
+      '운영에서는 반드시 주입해야 합니다(기본값은 저장소에 공개되어 있어 사용 불가).',
   );
 }
 
-const ENC_KEY = crypto
-  .createHash('sha256')
-  .update(process.env.PHONE_ENC_KEY ?? 'dev-only-phone-enc-key-change-me')
-  .digest();
-const HMAC_KEY = process.env.PHONE_HMAC_KEY ?? 'dev-only-hmac-key-change-me';
+let encKeyCache: Buffer | null = null;
+function encKey(): Buffer {
+  if (!encKeyCache) {
+    assertKeysInProduction();
+    encKeyCache = crypto
+      .createHash('sha256')
+      .update(process.env.PHONE_ENC_KEY ?? DEV_ENC_KEY)
+      .digest();
+  }
+  return encKeyCache;
+}
+
+function hmacKey(): string {
+  assertKeysInProduction();
+  return process.env.PHONE_HMAC_KEY ?? DEV_HMAC_KEY;
+}
 
 export function encryptPhone(phone: string): string {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', ENC_KEY, iv);
+  const cipher = crypto.createCipheriv('aes-256-gcm', encKey(), iv);
   const enc = Buffer.concat([cipher.update(phone, 'utf8'), cipher.final()]);
   return [iv.toString('base64'), cipher.getAuthTag().toString('base64'), enc.toString('base64')].join(
     ':',
@@ -166,17 +186,17 @@ export function encryptPhone(phone: string): string {
 
 export function decryptPhone(payload: string): string {
   const [iv, tag, data] = payload.split(':');
-  const d = crypto.createDecipheriv('aes-256-gcm', ENC_KEY, Buffer.from(iv, 'base64'));
+  const d = crypto.createDecipheriv('aes-256-gcm', encKey(), Buffer.from(iv, 'base64'));
   d.setAuthTag(Buffer.from(tag, 'base64'));
   return Buffer.concat([d.update(Buffer.from(data, 'base64')), d.final()]).toString('utf8');
 }
 
 export function hashLast4(last4: string, storeCode: string): string {
-  return crypto.createHmac('sha256', HMAC_KEY).update(`${last4}:${storeCode}`).digest('hex');
+  return crypto.createHmac('sha256', hmacKey()).update(`${last4}:${storeCode}`).digest('hex');
 }
 
 export function hashOtp(code: string, sessionId: string): string {
-  return crypto.createHmac('sha256', HMAC_KEY).update(`${code}:${sessionId}`).digest('hex');
+  return crypto.createHmac('sha256', hmacKey()).update(`${code}:${sessionId}`).digest('hex');
 }
 
 export function maskPhone(phone: string): string {

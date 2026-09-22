@@ -17,6 +17,12 @@
   # 빌드 로그를 줄이고 설치 속도를 높인다
   NPM_FLAGS = "--no-audit --no-fund"
 
+# Next.js Runtime — 서버리스 함수(API Route · SSR)를 생성한다.
+# 자동 감지에 맡기면 base 가 하위 디렉터리일 때 적용되지 않는 경우가 있어 명시한다.
+# (package.json 에는 넣지 않는다. Netlify 가 설치·버전 관리를 맡는다)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # 폐쇄형 플랫폼이므로 검색엔진을 전면 차단한다.
 # (next.config.js 에도 같은 헤더가 있지만, 정적 자산 응답에도 확실히 붙이기 위해 둔다)
 [[headers]]
