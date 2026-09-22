@@ -38,7 +38,6 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
-    "@netlify/plugin-nextjs": "^5.16.0",
     "@types/node": "^20.14.11",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^18.3.3",

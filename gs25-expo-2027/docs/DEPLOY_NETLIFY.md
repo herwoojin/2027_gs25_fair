@@ -1,15 +1,22 @@
 # Netlify 배포 — 환경변수 정리
 
-> 저장소 최상위가 아니라 `gs25-expo-2027/` 안에 앱이 있습니다.
-> Netlify 사이트 설정에서 **Base directory = `gs25-expo-2027`** 로 지정하세요.
-> (`netlify.toml` 에도 동일하게 적어 두었습니다)
+저장소 최상위가 아니라 `gs25-expo-2027/` 안에 앱이 있습니다.
+**저장소 루트의 [`netlify.toml`](../../netlify.toml)** 이 이를 처리하므로,
+Netlify 사이트 설정에서는 **아무것도 바꾸지 않아도 됩니다.**
 
-| 항목 | 값 |
-|---|---|
-| Base directory | `gs25-expo-2027` |
-| Build command | `npm run build` |
-| Publish directory | `.next` |
-| Node version | `20` |
+| 항목 | 값 | 설정 위치 |
+|---|---|---|
+| Base directory | `gs25-expo-2027` | `netlify.toml` |
+| Build command | `npm run build` | `netlify.toml` |
+| Publish directory | **지정하지 않음** | Next.js Runtime 이 자동 설정 |
+| Node version | `20` | `netlify.toml` |
+
+> ⚠️ **Publish directory 를 `.next` 로 직접 지정하면 404 가 납니다.**
+> 빌드 산출물이 정적 파일로 그대로 노출되어 index.html 이 없기 때문입니다.
+> Netlify UI 에 값이 들어가 있다면 **비워 주세요.**
+>
+> ⚠️ `netlify.toml` 은 반드시 **저장소 최상위**에 있어야 합니다.
+> 앱 폴더 안에 두면 Netlify 가 읽지 못해 빈 사이트가 배포됩니다.
 
 ---
 
@@ -78,6 +85,26 @@ Netlify → **Site configuration → Environment variables** 에서 등록합니
 | `SOLAPI_API_KEY` / `SOLAPI_API_SECRET` / `SOLAPI_SENDER` | 발신번호 등록 후 | 경영주 SMS OTP |
 
 ---
+
+## 1-1. 404 가 뜬다면
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 전 경로 404 | `netlify.toml` 이 루트에 없음 / Base directory 미설정 | 루트 `netlify.toml` 확인 |
+| 전 경로 404 | Publish directory 를 `.next` 로 지정 | UI 에서 **비우기** |
+| 빌드는 성공인데 404 | Next.js Runtime 미적용 | 배포 로그에서 `Next.js Runtime` 문구 확인 |
+| `/` 는 되는데 `/api/*` 만 404 | 서버리스 함수 미생성 | 동일 — Runtime 확인 |
+
+배포 로그(**Deploys → 해당 배포 → Deploy log**)에서 아래 두 줄이 보여야 정상입니다.
+
+```
+> Installing plugins
+   - @netlify/plugin-nextjs@5.x
+...
+Next.js cache saved / Next.js Runtime ...
+```
+
+`Base directory: gs25-expo-2027` 도 로그 상단에 찍힙니다. 안 보이면 `netlify.toml` 을 못 읽은 것입니다.
 
 ## 2. 배포 후 Apps Script 연결
 

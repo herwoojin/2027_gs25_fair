@@ -1,0 +1,31 @@
+# Netlify 배포 설정 — 2027 GS25 상품전략공유회
+#
+# ⚠️ 이 파일은 반드시 **저장소 최상위**에 있어야 한다.
+#    앱이 gs25-expo-2027/ 안에 있으므로 base 로 지정한다.
+#    (앱 폴더 안에 두면 Netlify 가 읽지 못해 빈 사이트가 배포되고 404 가 뜬다)
+
+[build]
+  # 빌드 전에 이 디렉터리로 이동한다. npm install · npm run build 가 여기서 실행된다.
+  base = "gs25-expo-2027"
+  command = "npm run build"
+  # publish 는 지정하지 않는다.
+  # Next.js Runtime(자동 설치)이 서버리스 함수와 정적 자산 경로를 알아서 설정한다.
+  # 여기서 ".next" 를 직접 지정하면 빌드 산출물이 정적 파일로 그대로 노출되어 404 가 난다.
+
+[build.environment]
+  NODE_VERSION = "20"
+  # 빌드 로그를 줄이고 설치 속도를 높인다
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# 폐쇄형 플랫폼이므로 검색엔진을 전면 차단한다.
+# (next.config.js 에도 같은 헤더가 있지만, 정적 자산 응답에도 확실히 붙이기 위해 둔다)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+# Apps Script 트리거가 찾아오는 엔드포인트 · 콘텐츠 API — 캐시 금지
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"
