@@ -9,6 +9,8 @@ if (typeof window !== 'undefined') {
   throw new Error('lib/server/appsScript.ts is server-only');
 }
 
+import crypto from 'node:crypto';
+
 export const ALLOWED_STAFF_DOMAIN = 'gsretail.com';
 
 /** 도메인 화이트리스트 — Apps Script 에서도 같은 검사를 한 번 더 한다. */
@@ -100,6 +102,22 @@ export function diagnoseMailerUrl(url = process.env.APPS_SCRIPT_URL ?? ''): UrlD
   return { ok: true, code: 'ok', message: '형식이 올바릅니다.' };
 }
 
+
+/**
+ * 요청 서명 — 공유키를 그대로 보내지 않고 HMAC 서명만 보낸다.
+ * base = action|ts|nonce|email  ·  ts 는 ±2분, nonce 는 1회용(10분)
+ * 웹앱 URL 이 유출되거나 과거 요청이 캡처돼도 재사용할 수 없다.
+ */
+function signRequest(action: string, email: string, key: string) {
+  const ts = Date.now();
+  const nonce = crypto.randomBytes(12).toString('hex');
+  const sig = crypto
+    .createHmac('sha256', key)
+    .update([action, ts, nonce, email].join('|'))
+    .digest('hex');
+  return { ts, nonce, sig };
+}
+
 export class MailerAccessError extends Error {
   code = 'needs-anonymous-access' as const;
 }
@@ -118,7 +136,9 @@ function urlCandidates(raw: string): string[] {
 }
 
 async function post<T>(action: string, payload: Record<string, unknown>): Promise<T> {
-  const body = JSON.stringify({ ...payload, action, sharedKey: process.env.APPS_SCRIPT_KEY });
+  const key = process.env.APPS_SCRIPT_KEY!;
+  const email = String((payload as { email?: string }).email ?? '');
+  const body = JSON.stringify({ ...payload, action, ...signRequest(action, email, key) });
   const candidates = urlCandidates(process.env.APPS_SCRIPT_URL!);
 
   let sawLoginPage = false;

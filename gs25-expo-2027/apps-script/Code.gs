@@ -8,7 +8,8 @@
  * 보안 원칙
  *   1) 인증번호의 해시·만료·시도횟수는 **플랫폼이 관리**한다.
  *      이 스크립트는 메일 릴레이일 뿐이며 인증번호를 저장하지 않는다.
- *   2) 웹앱은 "모든 사용자(익명)"로 배포되므로 공유키(SHARED_KEY)로 호출자를 검증한다.
+ *   2) 웹앱은 "모든 사용자(익명)"로 배포하되, 호출자는 공유키를 직접 보내지 않고
+ *      공유키로 만든 HMAC 서명 + 타임스탬프 + 1회용 nonce 로 인증한다(재전송 불가).
  *   3) 도메인 화이트리스트를 **여기서도 다시 검사**한다(플랫폼 우회 방지).
  *   4) 발송 이력은 이메일을 마스킹해 기록하고, 인증번호는 절대 기록하지 않는다.
  *
@@ -55,8 +56,9 @@ function doPost(e) {
     return json_({ ok: false, error: 'invalid-json' });
   }
 
-  if (!verifyKey_(body.sharedKey)) {
-    log_('', body.action || '?', 'unauthorized', 'shared key mismatch', body.ip || '');
+  var authErr = verifyRequest_(body);
+  if (authErr) {
+    log_(body.email || '', body.action || '?', 'unauthorized', authErr, body.ip || '');
     return json_({ ok: false, error: 'unauthorized' });
   }
 
@@ -250,6 +252,62 @@ function verifyKey_(given) {
   var diff = 0;
   for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+/**
+ * 요청 서명 검증 — 공유키 + HMAC 서명 + 재전송 방지.
+ *
+ * 웹앱을 "모든 사용자"로 열어도 안전하도록, 호출자는 공유키를 **직접 보내지 않고**
+ * 공유키로 만든 서명만 보낸다. 타임스탬프(±2분)와 1회용 nonce 로 재전송을 막는다.
+ *
+ * base = action|ts|nonce|email
+ * sig  = HMAC-SHA256(SHARED_KEY, base) 의 hex
+ */
+function verifyRequest_(body) {
+  var key = PropertiesService.getScriptProperties().getProperty('SHARED_KEY');
+  if (!key) return 'SHARED_KEY not set (run setup)';
+
+  // 구버전 클라이언트 호환: 서명이 없으면 공유키 직접 비교로 처리한다.
+  if (!body.sig) {
+    return verifyKey_(body.sharedKey) ? '' : 'shared key mismatch';
+  }
+
+  var ts = Number(body.ts || 0);
+  if (!ts || Math.abs(Date.now() - ts) > 120000) return 'timestamp skew';
+
+  var nonce = String(body.nonce || '');
+  if (nonce.length < 8) return 'bad nonce';
+  if (!consumeNonce_(nonce)) return 'nonce replay';
+
+  var base = [body.action || '', ts, nonce, body.email || ''].join('|');
+  var expected = hmacHex_(base, key);
+  return constantEquals_(String(body.sig), expected) ? '' : 'bad signature';
+}
+
+function hmacHex_(message, key) {
+  var raw = Utilities.computeHmacSha256Signature(message, key);
+  var out = '';
+  for (var i = 0; i < raw.length; i++) {
+    var b = (raw[i] + 256) % 256;
+    out += (b < 16 ? '0' : '') + b.toString(16);
+  }
+  return out;
+}
+
+function constantEquals_(a, b) {
+  if (a.length !== b.length) return false;
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+/** 같은 nonce 는 10분 안에 두 번 쓸 수 없다 */
+function consumeNonce_(nonce) {
+  var cache = CacheService.getScriptCache();
+  var k = 'n_' + Utilities.base64EncodeWebSafe(nonce);
+  if (cache.get(k)) return false;
+  cache.put(k, '1', 600);
+  return true;
 }
 
 function consumeRate_(email) {

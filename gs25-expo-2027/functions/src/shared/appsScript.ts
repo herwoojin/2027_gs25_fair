@@ -5,6 +5,8 @@
  * 인증번호의 생성·해시·만료·시도횟수는 **Functions 가 관리**한다.
  * Apps Script 는 "@gsretail.com 주소로 메일을 보내는 일"만 맡는다.
  */
+import crypto from 'node:crypto';
+
 export const ALLOWED_STAFF_DOMAIN = 'gsretail.com';
 
 export function isAllowedStaffEmail(email: string): boolean {
@@ -48,6 +50,22 @@ export interface SendOtpResult {
   remainingQuota?: number;
 }
 
+
+/**
+ * 요청 서명 — 공유키를 그대로 보내지 않고 HMAC 서명만 보낸다.
+ * base = action|ts|nonce|email  ·  ts 는 ±2분, nonce 는 1회용(10분)
+ * 웹앱 URL 이 유출되거나 과거 요청이 캡처돼도 재사용할 수 없다.
+ */
+function signRequest(action: string, email: string, key: string) {
+  const ts = Date.now();
+  const nonce = crypto.randomBytes(12).toString('hex');
+  const sig = crypto
+    .createHmac('sha256', key)
+    .update([action, ts, nonce, email].join('|'))
+    .digest('hex');
+  return { ts, nonce, sig };
+}
+
 async function post<T>(
   url: string,
   key: string,
@@ -60,7 +78,11 @@ async function post<T>(
     const res = await fetch(normalizeMailerUrl(url), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, action, sharedKey: key }),
+      body: JSON.stringify({
+        ...payload,
+        action,
+        ...signRequest(action, String((payload as { email?: string }).email ?? ''), key),
+      }),
       redirect: 'follow',
       signal: controller.signal,
     });
