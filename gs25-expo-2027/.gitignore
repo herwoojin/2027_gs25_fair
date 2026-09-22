@@ -1,0 +1,30 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# 환경변수 · 비밀키
+.env
+.env.local
+.env.*.local
+*-service-account*.json
+serviceAccountKey.json
+
+# 로컬 개발 데이터 (Cloud Functions 대역 저장소)
+.devdata/
+.emulator-data/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+functions/lib/
+functions/node_modules/
+
+# 기타
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+coverage/

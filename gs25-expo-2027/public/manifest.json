@@ -1,0 +1,16 @@
+{
+  "name": "2027 GS25 상품전략공유회",
+  "short_name": "GS25 공유회",
+  "description": "등록된 경영주 전용 온라인 전시 플랫폼",
+  "start_url": "/lobby",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#0056b3",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "name": "gs25-expo-2027",
+  "version": "1.0.0",
+  "private": true,
+  "description": "2027 GS25 상품전략공유회 온라인 전시 플랫폼",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx scripts/seed.ts",
+    "create-store-accounts": "tsx scripts/createStoreAccounts.ts",
+    "verify-sync": "tsx scripts/verifySync.ts",
+    "check:mailer": "tsx scripts/checkMailer.ts",
+    "emulators": "firebase emulators:start --import=./.emulator-data --export-on-exit=./.emulator-data",
+    "test:rules": "tsx scripts/testRules.ts"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.109.0",
+    "@react-three/fiber": "^8.16.8",
+    "@tanstack/react-query": "^5.51.1",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "detect-gpu": "^5.0.56",
+    "firebase": "^10.12.4",
+    "framer-motion": "^11.3.8",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.417.0",
+    "next": "^14.2.35",
+    "qrcode": "^1.5.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "tailwind-merge": "^2.4.0",
+    "three": "^0.166.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "@types/node": "^20.14.11",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.166.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.35",
+    "firebase-admin": "^12.7.0",
+    "googleapis": "^140.0.1",
+    "postcss": "^8.4.39",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.5",
+    "tailwindcss": "^3.4.6",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

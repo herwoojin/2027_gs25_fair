@@ -1,0 +1,72 @@
+# Firebase App Hosting — 2027-gs25-fair
+# 백엔드 생성: firebase apphosting:backends:create --project gs25-fair
+# 시크릿 등록:  firebase apphosting:secrets:set <NAME> --project gs25-fair
+
+runConfig:
+  # 오픈 순간 스파이크 대비 (TRD 5장). 행사 기간에는 minInstances 를 올린다.
+  minInstances: 0
+  maxInstances: 20
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 512
+
+env:
+  # ── 클라이언트 (번들에 포함되는 공개 값) ──────────────────────
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: AIzaSyB6fSlhJVJLZdV7VkLLy-im6pcF5Ddxamo
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: gs25-fair.firebaseapp.com
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: gs25-fair
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: gs25-fair.firebasestorage.app
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "270897004705"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: 1:270897004705:web:8a4a8c383715663f9730e0
+    availability: [BUILD, RUNTIME]
+
+  # Cloud Functions 배포 전에는 true 로 두어 로컬 백엔드를 쓴다.
+  # 배포 후 false 로 바꾸고 재배포하면 실제 Functions 를 호출한다.
+  - variable: NEXT_PUBLIC_DEMO_MODE
+    value: "true"
+    availability: [BUILD, RUNTIME]
+
+  # ── 행사 일정 ────────────────────────────────────────────────
+  - variable: NEXT_PUBLIC_OPEN_AT
+    value: "2026-09-19T09:00:00+09:00"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_TOUR_START_AT
+    value: "2026-10-05T10:00:00+09:00"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_CLOSE_AT
+    value: "2026-11-16T23:59:59+09:00"
+    availability: [BUILD, RUNTIME]
+
+  # ── 운영에서는 반드시 false ──────────────────────────────────
+  - variable: DEV_SHOW_OTP
+    value: "false"
+    availability: [RUNTIME]
+
+  # ── 시크릿 (Secret Manager) ──────────────────────────────────
+  # reCAPTCHA Enterprise 사이트 키는 공개값이지만 관리 편의상 시크릿으로 둔다.
+  - variable: NEXT_PUBLIC_APPCHECK_SITE_KEY
+    secret: APPCHECK_SITE_KEY
+    availability: [BUILD, RUNTIME]
+  - variable: APPS_SCRIPT_URL
+    secret: APPS_SCRIPT_URL
+    availability: [RUNTIME]
+  - variable: APPS_SCRIPT_KEY
+    secret: APPS_SCRIPT_KEY
+    availability: [RUNTIME]
+  - variable: PHONE_ENC_KEY
+    secret: PHONE_ENC_KEY
+    availability: [RUNTIME]
+  - variable: PHONE_HMAC_KEY
+    secret: PHONE_HMAC_KEY
+    availability: [RUNTIME]

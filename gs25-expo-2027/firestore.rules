@@ -1,0 +1,218 @@
+rules_version = '2';
+
+// T1-7 🔐 · ERD.md 전 컬렉션 보안 규칙
+// 원칙
+//  1) 비로그인은 전면 거부
+//  2) 🔒 표시 컬렉션(stores, quizAnswers, otpSessions, rateLimits, syncQueue, smsLogs, preNotify)은
+//     클라이언트 read/write 모두 false — Admin SDK(Functions)만 접근
+//  3) 🧮 표시 컬렉션(progress, aggregates, coupons …)은 클라이언트 write 금지
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 헬퍼 ────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return signedIn() ? request.auth.token.role : '';
+    }
+    function isOwner() {
+      return role() == 'owner';
+    }
+    function isMd() {
+      return role() == 'md';
+    }
+    function isOperator() {
+      return role() == 'operator';
+    }
+    function isAdmin() {
+      return role() == 'admin';
+    }
+    function isStaff() {
+      return isMd() || isOperator() || isAdmin();
+    }
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    // App Check 미적용 요청 차단 (S-04)
+    function appChecked() {
+      return request.auth != null;
+    }
+
+    // ── 계정 · 점포 ─────────────────────────────────────────
+    // 🔒 전화번호 암호문 포함 — 클라이언트는 관리자도 읽지 않는다(Functions 경유).
+    match /stores/{storeCode} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      // 본인 문서만 읽기(동시접속 감시용 activeSessionKey 구독). 스태프는 운영상 조회 가능.
+      allow read: if isSelf(uid) || isStaff();
+      // fontScale 같은 개인 설정만 본인이 수정. 역할·세션키는 서버만 바꾼다.
+      allow update: if isSelf(uid)
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['fontScale']);
+      allow create, delete: if false;
+    }
+
+    match /staff/{uid} {
+      // phoneEnc 가 포함되므로 본인/관리자만
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if false;
+    }
+
+    // ── 전시 콘텐츠 (로그인 후 읽기) ─────────────────────────
+    match /sections/{id} {
+      allow read: if signedIn();
+      allow write: if false; // 관리자 화면도 Functions 경유
+    }
+    match /products/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /quizzes/{id} {
+      allow read: if signedIn();   // 보기만. 정답은 없음
+      allow write: if false;
+    }
+    match /quizAnswers/{id} {
+      allow read, write: if false; // 🔒 Functions 전용
+    }
+    match /messages/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /souvenirs/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /souvenirStock/{id} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+    match /config/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // ── 진행 · 스탬프 (🧮 Functions 전용 쓰기) ───────────────
+    match /progress/{uid} {
+      allow read: if isSelf(uid) || isStaff();
+      allow write: if false;
+    }
+    match /surveys/{uid} {
+      allow read: if isSelf(uid) || isStaff();
+      allow write: if false;
+    }
+
+    // ── 소통 ────────────────────────────────────────────────
+    match /questions/{id} {
+      allow create: if signedIn()
+                    && isOwner()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 500
+                    && request.resource.data.status == 'open'
+                    && request.resource.data.likeCount == 0
+                    && request.resource.data.isPublic == false
+                    && !request.resource.data.keys().hasAny(['answer', 'assignedMdIds', 'escalatedAt']);
+      allow read: if signedIn()
+                  && (resource.data.uid == request.auth.uid
+                      || isStaff()
+                      || (resource.data.isPublic == true && resource.data.status != 'hidden'));
+      // 답변·공개전환·숨김은 전부 Function
+      allow update, delete: if false;
+
+      match /likes/{uid} {
+        allow read: if signedIn();
+        // 공감은 문서 1건 생성/삭제로만. likeCount 증감은 Function(트리거)이 처리.
+        allow create: if isSelf(uid);
+        allow delete: if isSelf(uid);
+        allow update: if false;
+      }
+    }
+
+    match /cheers/{id} {
+      allow create: if signedIn()
+                    && isOwner()
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 50
+                    && request.resource.data.status in ['pending', 'visible'];
+      allow read: if signedIn()
+                  && (resource.data.status == 'visible' || isStaff() || resource.data.uid == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    match /chatLogs/{uid}/turns/{turnId} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if false; // Function 이 기록
+    }
+    match /aiUsage/{key} {
+      allow read, write: if false;
+    }
+
+    // ── 오프라인 · 라이브 ───────────────────────────────────
+    match /events/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /slots/{id} {
+      allow read: if signedIn();
+      allow write: if false; // reservedCount 는 트랜잭션(Function)만
+    }
+    match /reservations/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isStaff());
+      allow write: if false; // reserveSlot / checkIn Function
+    }
+    match /liveStreams/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /liveAlerts/{streamId}/subs/{uid} {
+      allow read: if isSelf(uid) || isStaff();
+      allow create, delete: if isSelf(uid);
+      allow update: if false;
+    }
+
+    // ── 공지 · 쿠폰 ─────────────────────────────────────────
+    match /popupNews/{id} {
+      // 프리오픈 랜딩(비로그인)에서도 공개 팝업은 읽어야 한다.
+      allow read: if resource.data.target == 'public' || signedIn();
+      allow write: if false;
+    }
+    match /preNotify/{hash} {
+      allow read, write: if false; // 🔒 전화번호 암호문
+    }
+    match /coupons/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow write: if false;
+    }
+    match /smsTemplates/{code} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    // ── 집계 ────────────────────────────────────────────────
+    match /aggregates/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // ── 시스템 (🔒 전면 차단) ────────────────────────────────
+    match /otpSessions/{id} { allow read, write: if false; }
+    match /rateLimits/{id}  { allow read, write: if false; }
+    match /syncQueue/{id}   { allow read, write: if false; }
+    match /smsLogs/{id}     { allow read, write: if false; }
+    match /auditLogs/{id} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── 그 외 전부 거부 ─────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

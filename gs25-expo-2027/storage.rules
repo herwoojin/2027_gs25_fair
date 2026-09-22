@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// TRD 6.2 · Storage 보안 규칙
+//  - /private/**  : 로그인 사용자만. 실제 전달은 Function 이 발급하는 15분 만료 서명 URL 사용.
+//  - /public/**   : 로고·빈 진열대 셸 등 공개 가능한 에셋만.
+//  - 업로드는 관리자만(관리자 화면도 Function 경유가 원칙).
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function role() {
+      return signedIn() ? request.auth.token.role : '';
+    }
+    function isAdmin() {
+      return role() == 'admin';
+    }
+    function isStaff() {
+      return role() in ['md', 'operator', 'admin'];
+    }
+
+    // 상품 이미지·오디오·영상 원본
+    match /private/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // 공개 셸 에셋 (상품 정보 없음)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 관리자 업로드 임시 영역
+    match /uploads/{uid}/{allPaths=**} {
+      allow read: if isStaff();
+      allow write: if isAdmin()
+                   && request.resource.size < 50 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*|audio/.*|video/.*|application/pdf');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

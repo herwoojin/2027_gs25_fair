@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "gs25-fair",
+    "prod": "gs25-fair",
+    "dev": "gs25-expo-dev",
+    "stg": "gs25-expo-stg"
+  }
+}
