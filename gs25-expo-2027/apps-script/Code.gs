@@ -17,12 +17,19 @@
  *   1. 이 파일 전체를 Apps Script 프로젝트의 Code.gs 에 붙여넣는다.
  *   2. 편집기에서 setup 함수를 한 번 실행한다(권한 승인 필요).
  *      → Staff / MailLogs 시트가 생성되고 SHARED_KEY 가 발급되어 로그에 출력된다.
+ *   [A] 웹앱을 "모든 사용자"로 배포할 수 있는 경우 (push 모드)
  *   3. 배포 → 새 배포 → 유형 "웹 앱"
  *        - 실행 사용자: 나
  *        - 액세스 권한: 모든 사용자
  *      → 발급된 /exec URL 과 SHARED_KEY 를 플랫폼 환경변수에 넣는다.
  *         APPS_SCRIPT_URL=https://script.google.com/macros/s/.../exec
  *         APPS_SCRIPT_KEY=<setup 이 출력한 키>
+ *
+ *   [B] 조직 정책상 "모든 사용자"를 못 고르는 경우 (pull 모드) ← GS리테일
+ *   3. setPlatformUrl('https://<배포주소>') 실행
+ *   4. installPullTrigger() 실행  → 1분마다 플랫폼에서 발송 건을 가져온다
+ *   5. 플랫폼 환경변수: MAILER_MODE=pull, APPS_SCRIPT_KEY=<setup 이 출력한 키>
+ *      (APPS_SCRIPT_URL 은 필요 없음. 웹앱 배포도 필요 없음)
  */
 
 // ── 설정 ─────────────────────────────────────────────────────────
@@ -449,4 +456,142 @@ function testSend() {
   }
   var res = sendOtp_({ email: me, code: '123456', expiresInSec: 180, purpose: 'TEST' });
   Logger.log(JSON.stringify(res));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PULL 모드 — Apps Script 가 플랫폼으로 찾아가 발송 건을 가져온다
+//
+//  Workspace 정책상 웹앱을 "모든 사용자"로 배포할 수 없을 때 사용한다.
+//  인바운드 접근이 전혀 필요 없으므로 "GS리테일의 모든 사용자" 설정 그대로 동작한다.
+//
+//  설정
+//    1. setPlatformUrl('https://<배포주소>') 를 한 번 실행
+//    2. installPullTrigger() 를 한 번 실행  (1분마다 자동 실행 등록)
+//    3. 상태 확인: checkPull()
+// ═══════════════════════════════════════════════════════════════
+
+/** 플랫폼 주소를 저장한다. 예: setPlatformUrl('https://2027-gs25-fair.netlify.app') */
+function setPlatformUrl(url) {
+  var u = String(url || '').trim().replace(/\/+$/, '');
+  if (!/^https:\/\//.test(u)) throw new Error('https:// 로 시작하는 주소여야 합니다.');
+  PropertiesService.getScriptProperties().setProperty('PLATFORM_URL', u);
+  Logger.log('PLATFORM_URL = ' + u);
+  return u;
+}
+
+function getPlatformUrl_() {
+  var u = PropertiesService.getScriptProperties().getProperty('PLATFORM_URL');
+  if (!u) throw new Error('PLATFORM_URL 이 없습니다. setPlatformUrl(\'https://...\') 를 먼저 실행하세요.');
+  return u;
+}
+
+/** 1분마다 pullAndSend 를 실행하는 트리거를 등록한다(중복 방지). */
+function installPullTrigger() {
+  removePullTrigger();
+  ScriptApp.newTrigger('pullAndSend').timeBased().everyMinutes(1).create();
+  Logger.log('✅ 1분 주기 트리거 등록 완료');
+}
+
+function removePullTrigger() {
+  var all = ScriptApp.getProjectTriggers();
+  var n = 0;
+  for (var i = 0; i < all.length; i++) {
+    if (all[i].getHandlerFunction() === 'pullAndSend') {
+      ScriptApp.deleteTrigger(all[i]);
+      n++;
+    }
+  }
+  if (n) Logger.log('기존 트리거 ' + n + '개 삭제');
+}
+
+/** 플랫폼에 보낼 요청에 서명을 붙인다. base = action|ts|nonce */
+function signedBody_(action, extra) {
+  var key = PropertiesService.getScriptProperties().getProperty('SHARED_KEY');
+  if (!key) throw new Error('SHARED_KEY 가 없습니다. setup() 을 먼저 실행하세요.');
+  var ts = Date.now();
+  var nonce = Utilities.getUuid().replace(/-/g, '');
+  var body = extra || {};
+  body.action = action;
+  body.ts = ts;
+  body.nonce = nonce;
+  body.sig = hmacHex_([action, ts, nonce].join('|'), key);
+  return body;
+}
+
+function callPlatform_(action, extra) {
+  var res = UrlFetchApp.fetch(getPlatformUrl_() + '/api/mail-queue', {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(signedBody_(action, extra)),
+    muteHttpExceptions: true,
+    followRedirects: true,
+  });
+  var code = res.getResponseCode();
+  var text = res.getContentText();
+  if (code !== 200) throw new Error('HTTP ' + code + ' — ' + text.slice(0, 200));
+  return JSON.parse(text);
+}
+
+/**
+ * 트리거가 1분마다 실행 — 대기 중인 인증번호를 가져와 발송하고 결과를 보고한다.
+ * 인증번호는 메모리에서만 다루고 시트·로그에 남기지 않는다.
+ */
+function pullAndSend() {
+  var pulled;
+  try {
+    pulled = callPlatform_('pull', {});
+  } catch (err) {
+    log_('', 'PULL', 'error', String(err), '');
+    return;
+  }
+  var jobs = (pulled && pulled.jobs) || [];
+  if (jobs.length === 0) return;
+
+  var results = [];
+  for (var i = 0; i < jobs.length; i++) {
+    var j = jobs[i];
+    try {
+      var email = String(j.email || '').trim().toLowerCase();
+      if (!isAllowedEmail_(email)) throw new Error('domain-not-allowed');
+      if (!/^\d{6}$/.test(String(j.code || ''))) throw new Error('invalid-code-format');
+
+      var staff = findStaff_(email);
+      if (!staff) throw new Error('not-registered');
+      if (!staff.active) throw new Error('inactive');
+
+      var minutes = Math.max(1, Math.round(Number(j.expiresInSec || 600) / 60));
+      MailApp.sendEmail({
+        to: email,
+        subject: '[GS25 상품전략공유회] 본부 로그인 인증번호 ' + j.code,
+        htmlBody: buildHtml_(staff.name || email, j.code, minutes),
+        body: buildText_(staff.name || email, j.code, minutes),
+        name: 'GS25 상품전략공유회',
+        noReply: true,
+      });
+
+      log_(email, j.purpose || 'STAFF_LOGIN', 'sent', staff.role || '', 'pull');
+      results.push({ id: j.id, ok: true });
+    } catch (err) {
+      log_(j.email || '', j.purpose || 'STAFF_LOGIN', 'failed', String(err), 'pull');
+      results.push({ id: j.id, ok: false, error: String(err) });
+    }
+  }
+
+  try {
+    callPlatform_('ack', { results: results });
+  } catch (err) {
+    log_('', 'ACK', 'error', String(err), '');
+  }
+}
+
+/** 편집기에서 실행해 연결 상태를 확인한다. */
+function checkPull() {
+  var res = callPlatform_('ping', {});
+  Logger.log('플랫폼 응답: ' + JSON.stringify(res));
+  var triggers = ScriptApp.getProjectTriggers().filter(function (t) {
+    return t.getHandlerFunction() === 'pullAndSend';
+  });
+  Logger.log('등록된 트리거: ' + triggers.length + '개');
+  Logger.log('남은 메일 한도: ' + MailApp.getRemainingDailyQuota());
+  return res;
 }

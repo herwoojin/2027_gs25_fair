@@ -13,7 +13,7 @@ interface SendResult {
   sessionId: string;
   expiresInSec: number;
   maskedEmail: string;
-  delivery: 'email' | 'dev';
+  delivery: 'email' | 'queued' | 'dev';
   devCode?: string;
   /** 메일러가 설정돼 있는데 발송이 실패한 경우의 원인 (로컬 개발 전용) */
   mailError?: string;
@@ -133,6 +133,17 @@ export default function StaffLoginPage() {
             </form>
           ) : (
             <form className="mt-6 space-y-4" onSubmit={verify}>
+              {sent?.delivery === 'queued' && (
+                <div className="rounded-xl bg-gs-blue-light px-4 py-3 text-sm">
+                  <p className="flex items-center gap-1.5 font-bold text-gs-blue">
+                    <Mail size={15} /> {sent.maskedEmail} 로 보내는 중입니다
+                  </p>
+                  <p className="mt-1 text-gs-muted">
+                    최대 1분 안에 도착합니다. 메일함에 없으면 스팸함도 확인해 주세요.
+                  </p>
+                </div>
+              )}
+
               {sent?.delivery === 'email' && (
                 <div className="rounded-xl bg-gs-blue-light px-4 py-3 text-sm">
                   <p className="flex items-center gap-1.5 font-bold text-gs-blue">

@@ -47,6 +47,7 @@ import {
   queueSheetRow,
 } from './store';
 import { HttpError, issueSession, logout, readSession, requireOwner, requireStaff } from './session';
+import { enqueueMail, mailerMode, OTP_TTL_SEC, queueStats } from './mailQueue';
 import {
   ALLOWED_STAFF_DOMAIN,
   isAllowedStaffEmail,
@@ -307,26 +308,34 @@ export async function staffLogin(payload: unknown, ctx: Ctx) {
     throw new HttpError(400, SAME_ERROR, 'invalid-credentials');
   }
 
+  const mode = mailerMode();
+  const ttlSec = OTP_TTL_SEC[mode];
+
   const sessionId = newId('otp_');
   const code = String(Math.floor(100000 + Math.random() * 900000));
   db.otpSessions[sessionId] = {
     id: sessionId,
     storeCode: `staff:${email}`,
     codeHash: hashOtp(code, sessionId),
-    expiresAt: Date.now() + 3 * 60000, // 유효 3분
+    expiresAt: Date.now() + ttlSec * 1000,
     attempts: 0,
     createdAt: Date.now(),
     staff,
   };
   persist();
 
-  // Apps Script 메일 릴레이로 발송
-  const sent = await sendStaffOtpEmail({ email, code, expiresInSec: 180, ip: ctx.ip });
+  // pull 모드: 큐에 넣으면 Apps Script 트리거(1분)가 가져가 발송한다.
+  // push 모드: 우리가 Apps Script 웹앱을 직접 호출한다.
+  const sent =
+    mode === 'pull'
+      ? (enqueueMail({ email, code, expiresInSec: ttlSec }),
+        { ok: true, maskedEmail: maskEmail(email), queued: true } as const)
+      : await sendStaffOtpEmail({ email, code, expiresInSec: ttlSec, ip: ctx.ip });
 
   // 메일러가 설정돼 있는데 발송이 실패한 경우.
   // 로컬 개발에서는 인증번호를 화면에 띄워 계속 작업할 수 있게 하고(운영은 그대로 실패),
   // 설정이 잘못됐다는 사실은 응답과 감사 로그에 남긴다.
-  const mailBroken = !sent.ok && sent.error !== 'not-configured';
+  const mailBroken = !sent.ok && ('error' in sent ? sent.error !== 'not-configured' : true);
   if (mailBroken) {
     audit({
       uid: email,
@@ -356,15 +365,19 @@ export async function staffLogin(payload: unknown, ctx: Ctx) {
   );
   audit({ uid: email, role: 'anonymous', action: 'staff.otp.requested', ip: ctx.ip, ua: ctx.ua });
 
+  const queued = 'queued' in sent && sent.queued === true;
+
   return {
     sessionId,
-    expiresInSec: 180,
+    expiresInSec: ttlSec,
     maskedEmail: sent.maskedEmail ?? maskEmail(email),
-    // 메일 발송에 성공했을 때만 email. 그 외에는 로컬 개발용으로 코드를 그대로 돌려준다.
-    delivery: sent.ok ? ('email' as const) : ('dev' as const),
+    // queued: Apps Script 트리거가 가져갈 때까지 최대 1분 대기
+    delivery: queued ? ('queued' as const) : sent.ok ? ('email' as const) : ('dev' as const),
     ...(!sent.ok && SHOW_DEV_OTP ? { devCode: code } : {}),
-    ...(mailBroken ? { mailError: sent.error } : {}),
-    ...(sent.remainingQuota !== undefined ? { remainingQuota: sent.remainingQuota } : {}),
+    ...(mailBroken && 'error' in sent ? { mailError: sent.error } : {}),
+    ...('remainingQuota' in sent && sent.remainingQuota !== undefined
+      ? { remainingQuota: sent.remainingQuota }
+      : {}),
   };
 }
 
@@ -413,13 +426,39 @@ export async function staffVerify(payload: unknown, ctx: Ctx) {
 /** 관리자 화면에서 메일러 연결 상태를 점검한다. */
 export async function checkMailer(_payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
+  const mode = mailerMode();
+
+  // pull 모드는 우리가 Apps Script 를 호출하지 않으므로 ping/원장조회를 하지 않는다.
+  // 대신 트리거가 최근에 다녀갔는지로 연결 상태를 판단한다.
+  if (mode === 'pull') {
+    const q = queueStats();
+    const alive = q.lastPullAgoSec !== null && q.lastPullAgoSec < 180;
+    return {
+      mode,
+      configured: true,
+      ping: {
+        ok: alive,
+        error: alive
+          ? undefined
+          : q.lastPullAt
+            ? `Apps Script 트리거가 ${q.lastPullAgoSec}초째 오지 않았습니다.`
+            : 'Apps Script 트리거가 아직 한 번도 오지 않았습니다. installPullTrigger() 를 실행했는지 확인하세요.',
+      },
+      staffCount: null,
+      allowedDomain: ALLOWED_STAFF_DOMAIN,
+      queue: q,
+    };
+  }
+
   const ping = await pingMailer();
   const staff = await listStaffFromSheet(true);
   return {
+    mode: mailerMode(),
     configured: mailerConfigured(),
     ping,
     staffCount: staff?.length ?? null,
     allowedDomain: ALLOWED_STAFF_DOMAIN,
+    queue: queueStats(),
   };
 }
 

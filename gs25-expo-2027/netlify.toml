@@ -1,0 +1,30 @@
+# Netlify 배포 설정 — 2027 GS25 상품전략공유회
+#
+# 저장소 최상위가 아니라 gs25-expo-2027/ 안에 앱이 있으므로
+# Netlify 사이트 설정에서 **Base directory 를 `gs25-expo-2027` 로 지정**하거나,
+# 이 파일을 저장소 루트로 옮기고 base 를 아래처럼 지정한다.
+
+[build]
+  base = "gs25-expo-2027"
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Next.js 런타임 (App Router · API Route 지원)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# 폐쇄형 플랫폼이므로 검색엔진을 전면 차단한다.
+# (next.config.js 의 헤더와 중복되지만, 정적 자산 응답에도 확실히 붙이기 위해 둔다)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive, nosnippet"
+
+# Apps Script 트리거가 찾아오는 엔드포인트 — 캐시 금지
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store, max-age=0"

@@ -130,6 +130,12 @@ interface DB {
   liveSubs: Record<string, string[]>;
   preNotify: Record<string, { storeCode: string; phoneEnc: string; consentAt: number; sentStages: string[] }>;
   syncQueue: SyncRow[];
+  /** pull 모드 메일 발송 대기열 (lib/server/mailQueue.ts) */
+  mailQueue: import('./mailQueue').MailJob[];
+  /** Apps Script 트리거가 마지막으로 다녀간 시각 */
+  mailerLastPullAt?: number;
+  /** 인바운드 요청 재전송 방지용 nonce */
+  pullNonces: Record<string, number>;
   completionCounter: number;
   config: typeof DEFAULT_CONFIG;
 }
@@ -216,6 +222,8 @@ function seedDb(): DB {
     liveSubs: {},
     preNotify: {},
     syncQueue: [],
+    mailQueue: [],
+    pullNonces: {},
     completionCounter: 0,
     config: { ...DEFAULT_CONFIG },
   };
@@ -252,6 +260,8 @@ const SHAPE: Record<string, () => unknown> = {
   liveSubs: () => ({}),
   preNotify: () => ({}),
   syncQueue: () => [],
+  mailQueue: () => [],
+  pullNonces: () => ({}),
 };
 
 function ensureShape(cur: DB): DB {
