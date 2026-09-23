@@ -50,6 +50,16 @@ export async function POST(req: NextRequest, { params }: { params: { name: strin
         { status: 400 },
       );
     }
+    // 환경변수 누락 같은 배포 설정 문제는 "일시적 오류"로 뭉개면 원인을 찾을 수 없다.
+    // 메시지에 환경변수 *이름*만 들어 있고 값은 없으므로 그대로 내려준다.
+    const message = err instanceof Error ? err.message : '';
+    if (/PHONE_ENC_KEY|PHONE_HMAC_KEY|APPS_SCRIPT_KEY/.test(message)) {
+      console.error(`[fn:${name}] 설정 오류`, message);
+      return NextResponse.json(
+        { error: { code: 'server-misconfigured', message } },
+        { status: 503 },
+      );
+    }
     console.error(`[fn:${name}]`, err);
     return NextResponse.json(
       { error: { code: 'internal', message: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.' } },

@@ -5,9 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * ⚠️ 날짜 포맷에는 반드시 timeZone 을 고정한다.
+ * 서버(Netlify 는 UTC)와 브라우저(KST)의 결과가 달라지면
+ * SSR 결과와 하이드레이션 결과가 어긋나 React #418/#425 가 발생한다.
+ * 이 서비스는 국내 전용이므로 항상 Asia/Seoul 로 표기한다.
+ */
+export const KST = 'Asia/Seoul';
+
 export function formatDateKo(ts: number | string, withTime = false): string {
   const d = typeof ts === 'string' ? new Date(`${ts}T00:00:00+09:00`) : new Date(ts);
   return d.toLocaleString('ko-KR', {
+    timeZone: KST,
     month: 'long',
     day: 'numeric',
     weekday: 'short',
@@ -15,14 +24,20 @@ export function formatDateKo(ts: number | string, withTime = false): string {
   });
 }
 
+export function formatDateTimeKo(ts: number, opts: Intl.DateTimeFormatOptions = {}): string {
+  return new Date(ts).toLocaleString('ko-KR', { timeZone: KST, ...opts });
+}
+
 export function formatRange(start: string, end: string): string {
-  const s = new Date(`${start}T00:00:00+09:00`);
-  const e = new Date(`${end}T00:00:00+09:00`);
-  const fmt = (d: Date) => `${d.getMonth() + 1}.${d.getDate()}`;
-  const wd = ['일', '월', '화', '수', '목', '금', '토'];
-  return start === end
-    ? `${fmt(s)}(${wd[s.getDay()]})`
-    : `${fmt(s)}(${wd[s.getDay()]}) – ${fmt(e)}(${wd[e.getDay()]})`;
+  // getMonth()/getDay() 는 실행 환경의 타임존을 따르므로 Intl 로 KST 고정 포맷한다.
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00+09:00`).toLocaleDateString('ko-KR', {
+      timeZone: KST,
+      month: 'numeric',
+      day: 'numeric',
+      weekday: 'short',
+    });
+  return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
 }
 
 export interface Countdown {

@@ -39,7 +39,12 @@ export async function GET() {
     const cpuLoad1m = os.loadavg()[0];
     const cpuPercent = Math.min(100, (cpuLoad1m / Math.max(1, os.cpus().length)) * 100);
 
-    const metrics = [memPercent, disk?.percent ?? 0, cpuPercent];
+    // 서버리스(Netlify/Lambda)는 컨테이너 디스크가 수 MB 라 항상 100% 로 잡힌다.
+    // 실제 용량 신호가 아니므로 신호등 계산에서 제외한다.
+    const diskIsEphemeral = !disk || disk.totalMB < 512;
+
+    const diskPercent = disk && !diskIsEphemeral ? disk.percent : 0;
+    const metrics = [memPercent, diskPercent, cpuPercent];
     const worst = Math.max(...metrics);
     const level = levelOf(worst);
     const reason =
@@ -47,7 +52,7 @@ export async function GET() {
         ? ''
         : worst === memPercent
           ? '메모리 사용량이 높습니다'
-          : worst === (disk?.percent ?? -1)
+          : diskPercent > 0 && worst === diskPercent
             ? '디스크 여유 공간이 적습니다'
             : 'CPU 부하가 높습니다';
 
@@ -57,11 +62,22 @@ export async function GET() {
         uptimeSec: Math.round(process.uptime()),
         memory: { usedMB, totalMB: limitMB, percent: Number(memPercent.toFixed(1)) },
         cpuLoad1m: Number(cpuLoad1m.toFixed(2)),
-        disk: disk
-          ? { usedMB: disk.usedMB, totalMB: disk.totalMB, percent: Number(disk.percent.toFixed(1)) }
-          : null,
+        disk:
+          disk && !diskIsEphemeral
+            ? { usedMB: disk.usedMB, totalMB: disk.totalMB, percent: Number(disk.percent.toFixed(1)) }
+            : null,
         level,
         reason,
+        // 배포 설정 점검용 — **값은 절대 담지 않고 설정 여부만** 알린다.
+        config: {
+          demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
+          mailerMode: process.env.MAILER_MODE ?? '(미설정)',
+          hasAppsScriptKey: Boolean(process.env.APPS_SCRIPT_KEY),
+          hasPhoneEncKey: Boolean(process.env.PHONE_ENC_KEY),
+          hasPhoneHmacKey: Boolean(process.env.PHONE_HMAC_KEY),
+          devShowOtp: process.env.DEV_SHOW_OTP === 'true',
+          nodeEnv: process.env.NODE_ENV,
+        },
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );

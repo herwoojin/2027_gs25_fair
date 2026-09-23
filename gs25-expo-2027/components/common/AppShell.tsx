@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Home,
   Trophy,
@@ -39,7 +39,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, progress, signOut, kickedReason } = useSession();
-  const reduced = useReducedMotion();
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -114,9 +113,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={pathname}
-            initial={reduced ? false : { opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={reduced ? undefined : { opacity: 0, y: -6 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {children}

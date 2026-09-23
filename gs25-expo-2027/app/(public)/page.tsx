@@ -3,12 +3,12 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BellRing, ChevronLeft, ChevronRight, Lock, MapPin, Pause, Play } from 'lucide-react';
 import type { AppConfig, PopupNews as PopupNewsType } from '@/types';
 import { callFn, type ApiError } from '@/lib/api';
 import { DEFAULT_CONFIG, SITE } from '@/lib/config';
-import { formatRange } from '@/lib/utils';
+import { formatDateTimeKo, formatRange } from '@/lib/utils';
 import { themeOf } from '@/lib/cityTheme';
 import { useViewMode } from '@/lib/gpuTier';
 import { Countdown } from '@/components/public/Countdown';
@@ -64,10 +64,10 @@ export default function LandingPage() {
   const knobRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
-  const reduced = useReducedMotion();
+  // mode 는 useEffect 안에서 정해지므로 SSR·첫 렌더 모두 null → 정적 히어로.
+  // 동작 줄이기 설정은 useViewMode 내부에서 함께 판단한다.
   const { mode, quality } = useViewMode(false);
-  // 3D 는 WebGL 지원 + 모션 허용일 때만. 그 외에는 정적 히어로로 떨어진다.
-  const use3D = mode === '3d' && !reduced;
+  const use3D = mode === '3d';
 
   useEffect(() => {
     setNow(Date.now());
@@ -246,7 +246,7 @@ export default function LandingPage() {
                     입장하기
                   </button>
                   <span className="text-sm text-white/55">
-                    {new Date(config.openAt).toLocaleString('ko-KR', {
+                    {formatDateTimeKo(config.openAt, {
                       month: 'long',
                       day: 'numeric',
                       hour: '2-digit',

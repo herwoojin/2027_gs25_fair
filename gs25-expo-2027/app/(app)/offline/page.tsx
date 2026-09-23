@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
 import type { ExpoEvent, Slot } from '@/types';
 import { SLOT_TIMES } from '@/types';
@@ -159,7 +159,6 @@ function KoreaMap({
   selected: string | null;
   onSelect: (id: string) => void;
 }) {
-  const reduced = useReducedMotion();
   const BOUND = { minLat: 33.0, maxLat: 38.4, minLng: 125.8, maxLng: 129.7 };
   const px = (lng: number) => ((lng - BOUND.minLng) / (BOUND.maxLng - BOUND.minLng)) * 100;
   const py = (lat: number) => ((BOUND.maxLat - lat) / (BOUND.maxLat - BOUND.minLat)) * 100;
@@ -176,7 +175,7 @@ function KoreaMap({
           stroke="#c7d8ea"
           strokeWidth="0.6"
           strokeLinecap="round"
-          initial={reduced ? false : { pathLength: 0 }}
+          initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 2.2, ease: 'easeInOut' }}
         />
@@ -187,7 +186,7 @@ function KoreaMap({
           strokeWidth="0.35"
           strokeLinecap="round"
           strokeDasharray="1.5 2.5"
-          initial={reduced ? false : { pathLength: 0 }}
+          initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ duration: 2.2, delay: 0.3, ease: 'easeInOut' }}
         />
@@ -203,7 +202,7 @@ function KoreaMap({
             className="absolute -translate-x-1/2 -translate-y-1/2"
             style={{ left: `${px(e.lng)}%`, top: `${py(e.lat)}%` }}
             aria-label={e.city}
-            initial={reduced ? false : { scale: 0, opacity: 0 }}
+            initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.25 + i * 0.09, type: 'spring', stiffness: 260, damping: 18 }}
           >

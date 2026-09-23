@@ -74,9 +74,9 @@
           "purpose": "OrbitControls·Html·Text·RoundedBox 등 헬퍼"
         },
         {
-          "name": "detect-gpu",
-          "version": "5.0",
-          "purpose": "GPU tier 판별 → tier 0~1이면 2D 평면도 폴백",
+          "name": "GPU 등급 판정 (자체 구현)",
+          "version": "—",
+          "purpose": "WebGL renderer 문자열 + CPU 코어 · 기기 메모리로 tier 0~3 판정. 외부 CDN 요청이 없어 CSP 를 위반하지 않는다(detect-gpu 는 unpkg 에서 벤치마크를 받아와 제거)",
           "config": "lib/gpuTier.ts"
         },
         {

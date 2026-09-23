@@ -1,10 +1,11 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 /**
  * 스크롤 진입 시 한 번만 나타나는 래퍼.
- * `prefers-reduced-motion` 이면 애니메이션 없이 즉시 표시한다(접근성).
+ * `prefers-reduced-motion` 은 Providers 의 MotionConfig 가 처리한다.
+ * (여기서 렌더를 분기하면 SSR 결과와 달라져 하이드레이션이 깨진다)
  */
 export function Reveal({
   children,
@@ -19,10 +20,6 @@ export function Reveal({
   className?: string;
   once?: boolean;
 }) {
-  const reduced = useReducedMotion();
-
-  if (reduced) return <div className={className}>{children}</div>;
-
   return (
     <motion.div
       className={className}
@@ -46,9 +43,6 @@ export function RevealText({
   className?: string;
   delay?: number;
 }) {
-  const reduced = useReducedMotion();
-  if (reduced) return <span className={className}>{text}</span>;
-
   return (
     <span className={className} aria-label={text}>
       {[...text].map((ch, i) => (
