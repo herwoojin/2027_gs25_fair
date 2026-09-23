@@ -7,6 +7,15 @@
  *  - 클라이언트가 보낸 시각은 절대 신뢰하지 않고 서버 시각만 쓴다.
  */
 import { z } from 'zod';
+import {
+  sendSms,
+  sendSmsBatch,
+  isNightBlocked as nightBlocked,
+  smsMode,
+  smsBalance,
+  smsStatus,
+  normalizePhone,
+} from './sms';
 import type {
   Cheer,
   Coupon,
@@ -72,18 +81,15 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 /** 개발 모드에서만 화면에 OTP 를 보여준다. 운영에서는 절대 반환하지 않는다. */
 const SHOW_DEV_OTP = IS_DEV && process.env.DEV_SHOW_OTP !== 'false';
 
-// ── SMS (dev 스텁) ───────────────────────────────────────────────────
-function sendSms(code: string, phone: string, body: string) {
-  // 운영: functions/src/shared/solapi.ts 의 SolapiMessageService 사용.
-  // dev: 발송하지 않고 smsLogs 에만 기록한다(실수 대량 발송 방지 — GUIDE 3.4).
-  logSms(code, phone, body, 'sent(dev-stub)');
+// ── SMS ──────────────────────────────────────────────────────────────
+// 실제 발송은 lib/server/sms.ts (SOLAPI REST) 가 담당한다.
+// 키·발신번호가 없으면 자동으로 log 모드가 되어 smsLogs 에만 기록된다.
+
+/** 본부 담당자 알림 수신 번호. 미설정이면 해당 알림은 건너뛴다. */
+function opsNumber(): string {
+  return (process.env.SMS_OPS_NUMBER ?? '').replace(/[^0-9]/g, '');
 }
 
-function nightBlocked(): boolean {
-  // TRD 7.1 · 광고성 발송 야간(21~08시) 금지
-  const h = new Date().getHours();
-  return h >= 21 || h < 8;
-}
 
 // ── 인증 ─────────────────────────────────────────────────────────────
 const SAME_ERROR = '입력하신 정보를 확인해 주세요.';
@@ -134,7 +140,16 @@ export async function requestOtp(payload: unknown, ctx: Ctx) {
   persist();
 
   const phone = decryptPhone(store.phoneEnc);
-  sendSms('OTP', phone, `[GS25 공유회] 인증번호 ${code} (3분 내 입력)`);
+  // 사용자가 방금 요청한 인증번호이므로 야간 차단 대상이 아니다.
+  const sms = await sendSms('OTP', phone, `[GS25 공유회] 인증번호 ${code} (3분 내 입력)`, {
+    urgent: true,
+  });
+  // 실제 발송 모드인데 실패했다면, 오지 않을 문자를 기다리게 두면 안 된다.
+  if (smsMode() === 'live' && !sms.ok) {
+    delete db.otpSessions[sessionId];
+    persist();
+    throw new HttpError(503, '인증번호 발송에 실패했습니다. 잠시 후 다시 시도해 주세요.', 'sms-failed');
+  }
 
   return {
     sessionId,
@@ -791,9 +806,9 @@ export async function createQuestion(payload: unknown, ctx: Ctx) {
   for (const mdId of q.assignedMdIds) {
     const staff = STAFF.find((s) => s.uid === mdId);
     if (!staff?.smsEnabled) continue;
-    sendSms(
+    await sendSms(
       'Q_TO_MD',
-      '01000000000',
+      opsNumber(),
       `[공유회질의] ${section?.title ?? '본사'} ${REGION_LABEL[caller.region]} 경영주: ${body.text.slice(0, 40)}… 답변: /admin/questions?q=${q.id}`,
     );
   }
@@ -903,7 +918,7 @@ export async function answerQuestion(payload: unknown, ctx: Ctx) {
   // A_TO_OWNER 문자
   const store = db.stores[q.storeCode];
   if (store) {
-    sendSms(
+    await sendSms(
       'A_TO_OWNER',
       decryptPhone(store.phoneEnc),
       `[공유회] 답변이 도착했습니다: ${text.slice(0, 60)}… 전체보기 /my`,
@@ -949,7 +964,7 @@ export async function escalateQuestions(_payload: unknown, ctx: Ctx) {
     n += 1;
     const backups = allStaff().filter((s) => q.sectionId && s.backupFor.includes(q.sectionId));
     for (const b of backups) {
-      sendSms('Q_ESCALATE', '01000000000', `[공유회 미응답] ${b.name}님, 2시간 경과 질문이 있습니다.`);
+      await sendSms('Q_ESCALATE', opsNumber(), `[공유회 미응답] ${b.name}님, 2시간 경과 질문이 있습니다.`);
     }
   }
   persist();
@@ -1181,7 +1196,7 @@ export async function reserveSlot(payload: unknown, ctx: Ctx) {
 
   const store = db.stores[caller.storeCode];
   if (store) {
-    sendSms(
+    await sendSms(
       'RESERVE_OK',
       decryptPhone(store.phoneEnc),
       `[GS25 공유회] ${ev.city} ${body.date} ${['', '10:00', '13:00', '15:00'][body.slotNo]} 예약이 확정되었습니다. 장소: ${ev.venueName}`,
@@ -1423,7 +1438,7 @@ export async function runPreNotifyBatch(payload: unknown, ctx: Ctx) {
   let sent = 0;
   for (const [key, rec] of Object.entries(db.preNotify)) {
     if (rec.sentStages.includes(stage)) continue;
-    sendSms('PRE_NOTIFY', decryptPhone(rec.phoneEnc), `[GS25 공유회] ${stage} 안내입니다.`);
+    await sendSms('PRE_NOTIFY', decryptPhone(rec.phoneEnc), `[GS25 공유회] ${stage} 안내입니다.`);
     rec.sentStages.push(stage);
     sent += 1;
     void key;
@@ -1521,11 +1536,18 @@ export async function sendNudge(payload: unknown, ctx: Ctx) {
       ? '[GS25 공유회] 아직 온라인 전시에 접속하지 않으셨습니다. 지금 참여해 보세요.'
       : '[GS25 공유회] 스탬프가 몇 개 남았습니다! 완주하시면 쿠폰을 보내 드립니다.';
   if (!preview) {
-    for (const r of res.rows) {
-      const store = db.stores[r.storeCode];
-      if (store) sendSms('NUDGE', decryptPhone(store.phoneEnc), body);
-    }
-    audit({ uid: caller.uid, role: caller.role, action: 'nudge.sent', detail: `${res.rows.length}건` });
+    const targets = res.rows
+      .map((r) => db.stores[r.storeCode])
+      .filter((st): st is NonNullable<typeof st> => !!st)
+      .map((st) => ({ to: decryptPhone(st.phoneEnc), text: body }));
+    const out = await sendSmsBatch('NUDGE', targets);
+    audit({
+      uid: caller.uid,
+      role: caller.role,
+      action: 'nudge.sent',
+      detail: `대상 ${res.rows.length}건 · 성공 ${out.sent} 실패 ${out.failed}`,
+    });
+    return { count: res.rows.length, sent: out.sent, failed: out.failed, body, preview, sample: res.rows.slice(0, 5) };
   }
   return { count: res.rows.length, body, preview, sample: res.rows.slice(0, 5) };
 }
@@ -1573,27 +1595,69 @@ export async function sendCoupons(payload: unknown, ctx: Ctx) {
     for (const m of matched.slice(i, i + 100)) {
       if (!m.code) continue;
       const store = db.stores[m.storeCode];
+      // 실제 발송 결과를 쿠폰 상태에 반영한다 — 실패한 건은 재발송 대상으로 남아야 한다.
+      const res = store
+        ? await sendSms(
+            'COUPON',
+            decryptPhone(store.phoneEnc),
+            `[GS25 공유회] 완주 축하드립니다! 쿠폰번호: ${m.code}`,
+          )
+        : null;
+      const delivered = smsMode() === 'live' ? !!res?.ok : !!store;
       const coupon: Coupon = {
         uid: m.uid,
         storeCode: m.storeCode,
         code: m.code,
-        status: store ? 'sent' : 'failed',
+        status: delivered ? 'sent' : 'failed',
         sentAt: Date.now(),
         retries: (db.coupons[m.uid]?.retries ?? 0) + (retryFailedOnly ? 1 : 0),
       };
       db.coupons[m.uid] = coupon;
-      if (store) {
-        sendSms('COUPON', decryptPhone(store.phoneEnc), `[GS25 공유회] 완주 축하드립니다! 쿠폰번호: ${m.code}`);
-        sent += 1;
-      } else {
-        failed += 1;
-      }
+      if (delivered) sent += 1;
+      else failed += 1;
       queueSheetRow('Coupons', [new Date().toISOString(), m.storeCode, coupon.status, m.code]);
     }
   }
   persist();
   audit({ uid: caller.uid, role: caller.role, action: 'coupons.sent', detail: `성공 ${sent} 실패 ${failed}` });
   return { dryRun: false, sent, failed };
+}
+
+/** 관리자 · 문자 발송 설정과 솔라피 잔액을 확인한다. */
+export async function adminSmsStatus(_payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['admin']);
+  const balance = await smsBalance();
+  return {
+    ...smsStatus(),
+    opsNumberSet: !!opsNumber(),
+    balance: balance.ok ? { balance: balance.balance, point: balance.point } : null,
+    balanceError: balance.ok ? null : balance.error,
+    recent: db.smsLogs.slice(0, 20),
+  };
+}
+
+/** 관리자 · 지정한 번호로 테스트 문자를 1건 보낸다. */
+export async function adminSmsTest(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { to, text } = z
+    .object({
+      to: z.string().trim().min(9).max(20),
+      text: z.string().trim().min(1).max(300).default('[GS25 상품전략공유회] 발송 테스트입니다.'),
+    })
+    .parse(payload ?? {});
+
+  const phone = normalizePhone(to);
+  if (!phone) throw new HttpError(400, '휴대폰 번호 형식이 아닙니다.', 'invalid-phone');
+
+  // 테스트는 관리자가 방금 누른 것이므로 야간 차단 대상이 아니다.
+  const res = await sendSms('PRE_NOTIFY', phone, text, { urgent: true });
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: 'sms.test',
+    detail: `${res.status}${res.error ? ` · ${res.error}` : ''}`,
+  });
+  return { ...res, mode: smsMode() };
 }
 
 export async function adminAudit(payload: unknown, ctx: Ctx) {
@@ -1760,6 +1824,8 @@ export const HANDLERS = {
   adminContent,
   adminCheers,
   adminWhitelistSync,
+  adminSmsStatus,
+  adminSmsTest,
 } as const;
 
 export type HandlerName = keyof typeof HANDLERS;

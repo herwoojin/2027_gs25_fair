@@ -1,7 +1,7 @@
 {
   "project": "2027 GS25 상품전략공유회 온라인 전시 플랫폼",
   "description": "전국 9개 도시 순회 오프라인 공유회와 동일한 동선·진열을 3D 웹앱으로 재현한 폐쇄형 온라인 전시 플랫폼. 사전 등록된 GS25 경영주만 로그인해 섹션별 상품 설명을 듣고·읽고·퀴즈를 풀어 스탬프 11개를 모은다.",
-  "lastUpdated": "2026-09-22",
+  "lastUpdated": "2026-09-23",
   "repo": "gs25-expo-2027",
   "reference": "2026년판 25fair.vercel.app — 카메라 스플라인 투어 · 도시별 accent 리테마 · 시네마틱 질감(레터박스/그레인/비네트) 연출 문법을 참조해 2027 랜딩에 이식",
   "architectureSummary": "Next.js 14(App Router) 프런트엔드 + Firebase(Auth/Firestore/Functions 2nd gen/Storage/App Check) 백엔드. 스탬프·퀴즈 채점·SMS·AI 호출은 전부 Cloud Functions(asia-northeast3)에서만 수행하고, 클라이언트는 Firestore 보안 규칙으로 최소 권한만 갖는다. 랭킹·워드클라우드·통계는 스케줄 함수가 aggregates/* 단일 문서로 요약해 동시접속 3,000명에서도 읽기 비용을 억제한다. 로컬 개발에서는 Firebase 없이도 동일한 서버 판정을 재현하는 Next API Route 백엔드(lib/server/**)로 폴백한다.",
@@ -261,10 +261,10 @@
           "config": "functions/src/ai/index.ts"
         },
         {
-          "name": "SOLAPI",
+          "name": "SOLAPI (문자 발송)",
           "version": "5.3",
-          "purpose": "SMS/LMS/MMS — OTP·질의알림·답변·예약확정·리마인드·쿠폰. 야간(21~08시) 광고성 차단",
-          "config": "functions/src/shared/solapi.ts"
+          "purpose": "경영주 인증번호·예약확정·답변알림·쿠폰 문자 발송. REST API 직접 호출(HMAC-SHA256 인증)로 SDK 의존성 없이 연동.",
+          "config": "lib/server/sms.ts · 환경변수 SOLAPI_API_KEY / SOLAPI_API_SECRET / SOLAPI_SENDER / SMS_MODE / SMS_ALLOWLIST / SMS_OPS_NUMBER"
         },
         {
           "name": "Google Sheets API (googleapis)",
@@ -334,6 +334,11 @@
           "version": "—",
           "purpose": "검색엔진 전면 차단",
           "config": "public/robots.txt"
+        },
+        {
+          "name": "문자 발송 안전장치",
+          "purpose": "광고성 야간(21~08시 KST) 차단 · SMS_ALLOWLIST 로 개발 중 대량 오발송 방지 · 키 미설정 시 자동 log 모드 · 인증번호 본문은 로그에 저장하지 않음.",
+          "config": "lib/server/sms.ts"
         }
       ]
     },
@@ -357,6 +362,11 @@
           "version": "—",
           "purpose": "관리자 화면에서 보안 로그와 시트 백업 대기열 확인",
           "config": "app/(admin)/admin/audit/page.tsx"
+        },
+        {
+          "name": "문자 발송 진단 (adminSmsStatus / adminSmsTest)",
+          "purpose": "솔라피 잔액·발신번호·발송 모드·최근 발송 이력을 관리자만 조회하고, 지정 번호로 테스트 1건을 보낸다.",
+          "config": "lib/server/handlers.ts · admin 역할 전용"
         }
       ]
     },

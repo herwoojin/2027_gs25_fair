@@ -3,7 +3,7 @@
 > 전국 9개 도시 순회 공유회와 **동일한 동선·진열을 3D 웹으로 재현**한 폐쇄형 전시 플랫폼.
 > 사전 등록 경영주만 로그인해 섹션별 상품을 듣고·읽고·퀴즈를 풀어 **스탬프 11개**를 모은다.
 >
-> **마지막 업데이트: 2026-09-22** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
+> **마지막 업데이트: 2026-09-23** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
 >
 > Firebase 프로젝트: **`gs25-fair`** (2027-gs25-fair · 270897004705 · doridorimammam-org)
 
@@ -132,7 +132,8 @@ flowchart TB
 | 이름 | 버전 | 용도 | 위치 | 비고 |
 |---|---|---|---|---|
 | Gemini API | gemini-1.5-flash | 섹션 챗봇 | `functions/src/ai/index.ts` | 자료 밖 질문은 MD 연결, 1일 50회 |
-| SOLAPI | 5.3 | SMS/LMS/MMS 10종 템플릿 | `functions/src/shared/solapi.ts` | 야간 광고성 차단, dev 허용목록 |
+| SOLAPI (넷리파이 경로) | REST v4 | SMS/LMS 10종 발송 · 잔액 조회 | `lib/server/sms.ts` | **실제 운영 경로.** SDK 없이 HMAC-SHA256 직접 인증 |
+| SOLAPI (Functions 경로) | SDK 5.3 | 동일 기능 | `functions/src/shared/solapi.ts` | Firebase 배포 시에만 사용 |
 | Google Sheets API | 140 | 백업 원장 · 화이트리스트 | `functions/src/shared/sheets.ts` | |
 | MS Power Automate | — | 일일 리포트 · 명단 갱신 HTTP | `functions/src/sync/index.ts` | `X-Integration-Key` timing-safe |
 | YouTube (nocookie) | — | MD 라이브 임베드 | `app/(app)/live/page.tsx` | 일부공개, 로그인 사용자만 |
@@ -206,7 +207,10 @@ flowchart TB
    PRD 2장의 "이메일+비밀번호+2차 인증" 대비 한 단계 약한 구조이며, 운영 요청에 따른 선택이다.
    Staff 원장 화이트리스트·rate limit·5회 실패 잠금·App Check·감사 로그로 보완한다.
 7. **onlineNow(현재 접속자)** 는 집계 함수에서 0으로 내려간다. 정확한 값이 필요하면 Realtime Database presence 를 붙여야 한다.
-8. **Next.js 14 계열 유지** — TRD 제약에 따라 14.x 를 쓰되, 취약점 공지된 14.2.5 대신 14.2.35 패치 버전을 사용한다.
+8. **문자 발송은 기본이 `log` 모드**다. `SMS_MODE=live` 로 바꾸기 전까지 실제 발송은 일어나지 않고 `smsLogs` 에만 기록된다.
+   실수로 전국 경영주에게 대량 발송하는 사고를 막기 위한 기본값이며, 운영 전환 시 `SMS_ALLOWLIST` 를 비우고 `SMS_MODE=live` 로 설정해야 한다.
+   발신번호는 솔라피 콘솔에 사전 등록·인증된 번호만 쓸 수 있다.
+9. **Next.js 14 계열 유지** — TRD 제약에 따라 14.x 를 쓰되, 취약점 공지된 14.2.5 대신 14.2.35 패치 버전을 사용한다.
 
 ---
 

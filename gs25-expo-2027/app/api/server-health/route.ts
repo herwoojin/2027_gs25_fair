@@ -1,6 +1,7 @@
 import os from 'node:os';
 import fs from 'node:fs';
 import { NextResponse } from 'next/server';
+import { smsStatus } from '@/lib/server/sms';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -72,6 +73,8 @@ export async function GET() {
         config: {
           demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
           mailerMode: process.env.MAILER_MODE ?? '(미설정)',
+          smsMode: smsStatus().mode,
+          smsConfigured: smsStatus().configured,
           hasAppsScriptKey: Boolean(process.env.APPS_SCRIPT_KEY),
           hasPhoneEncKey: Boolean(process.env.PHONE_ENC_KEY),
           hasPhoneHmacKey: Boolean(process.env.PHONE_HMAC_KEY),

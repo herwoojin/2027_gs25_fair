@@ -124,7 +124,15 @@ interface DB {
   sessions: Record<string, SessionRecord>;
   rateLimits: Record<string, { count: number; windowStart: number; lockedUntil?: number }>;
   auditLogs: AuditRecord[];
-  smsLogs: { id: string; code: string; toMasked: string; body: string; status: string; at: number }[];
+  smsLogs: {
+    id: string;
+    code: string;
+    toMasked: string;
+    body: string;
+    status: string;
+    error?: string;
+    at: number;
+  }[];
   chatLogs: Record<string, { role: 'user' | 'bot'; text: string; sectionId: string; createdAt: number }[]>;
   aiUsage: Record<string, number>;
   liveSubs: Record<string, string[]>;
@@ -360,14 +368,16 @@ export function queueSheetRow(sheet: string, row: (string | number)[]) {
   persist();
 }
 
-export function logSms(code: string, to: string, body: string, status = 'sent') {
+export function logSms(code: string, to: string, body: string, status = 'sent', error?: string) {
   const d = load();
   d.smsLogs.unshift({
     id: newId('m_'),
     code,
     toMasked: maskPhone(to),
-    body,
+    // 본문에 인증번호가 들어가므로 저장하지 않는다 — 어떤 종류였는지만 남긴다.
+    body: code === 'OTP' ? '[인증번호 본문 미기록]' : body.slice(0, 120),
     status,
+    ...(error ? { error: error.slice(0, 200) } : {}),
     at: Date.now(),
   });
   if (d.smsLogs.length > 500) d.smsLogs.length = 500;
