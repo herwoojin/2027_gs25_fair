@@ -26,8 +26,8 @@
  *         APPS_SCRIPT_KEY=<setup 이 출력한 키>
  *
  *   [B] 조직 정책상 "모든 사용자"를 못 고르는 경우 (pull 모드) ← GS리테일
- *   3. setPlatformUrl('https://<배포주소>') 실행
- *   4. installPullTrigger() 실행  → 1분마다 플랫폼에서 발송 건을 가져온다
+ *   3. PLATFORM_URL_DEFAULT 상수가 배포 주소와 같은지 확인한다.
+ *   4. 편집기에서 setupPull 을 골라 ▶ 실행한다. (주소 저장 + 1분 트리거 + 즉시 동기화)
  *   5. 플랫폼 환경변수: MAILER_MODE=pull, APPS_SCRIPT_KEY=<setup 이 출력한 키>
  *      (APPS_SCRIPT_URL 은 필요 없음. 웹앱 배포도 필요 없음)
  */
@@ -464,16 +464,34 @@ function testSend() {
 //  Workspace 정책상 웹앱을 "모든 사용자"로 배포할 수 없을 때 사용한다.
 //  인바운드 접근이 전혀 필요 없으므로 "GS리테일의 모든 사용자" 설정 그대로 동작한다.
 //
-//  설정
-//    1. setPlatformUrl('https://<배포주소>') 를 한 번 실행
-//    2. installPullTrigger() 를 한 번 실행  (1분마다 자동 실행 등록)
-//    3. 상태 확인: checkPull()
+//  설정 — 편집기에서 setupPull 하나만 골라 ▶ 실행하면 끝난다.
+//  (편집기의 ▶ 실행 버튼은 함수에 인자를 넘길 수 없으므로,
+//   주소는 아래 PLATFORM_URL_DEFAULT 상수에 적어 둔다)
 // ═══════════════════════════════════════════════════════════════
 
-/** 플랫폼 주소를 저장한다. 예: setPlatformUrl('https://2027-gs25-fair.netlify.app') */
+/** 배포 주소. 주소가 바뀌면 이 줄만 고치면 된다. */
+var PLATFORM_URL_DEFAULT = 'https://25gps.netlify.app';
+
+/**
+ * ⭐ 편집기에서 이 함수 하나만 실행하면 pull 모드 설정이 모두 끝난다.
+ *    주소 저장 → 1분 트리거 등록 → 즉시 1회 동기화 → 상태 출력
+ */
+function setupPull() {
+  setPlatformUrl();
+  installPullTrigger();
+  pullAndSend(); // 트리거를 기다리지 않고 원장을 지금 바로 올린다
+  return checkPull();
+}
+
+/**
+ * 플랫폼 주소를 저장한다.
+ * 인자 없이 실행하면 PLATFORM_URL_DEFAULT 를 쓴다(편집기 ▶ 실행용).
+ */
 function setPlatformUrl(url) {
-  var u = String(url || '').trim().replace(/\/+$/, '');
-  if (!/^https:\/\//.test(u)) throw new Error('https:// 로 시작하는 주소여야 합니다.');
+  var u = String(url || PLATFORM_URL_DEFAULT || '').trim().replace(/\/+$/, '');
+  if (!/^https:\/\//.test(u)) {
+    throw new Error('https:// 로 시작하는 주소여야 합니다. 현재 값: "' + u + '"');
+  }
   PropertiesService.getScriptProperties().setProperty('PLATFORM_URL', u);
   Logger.log('PLATFORM_URL = ' + u);
   return u;
@@ -481,7 +499,7 @@ function setPlatformUrl(url) {
 
 function getPlatformUrl_() {
   var u = PropertiesService.getScriptProperties().getProperty('PLATFORM_URL');
-  if (!u) throw new Error('PLATFORM_URL 이 없습니다. setPlatformUrl(\'https://...\') 를 먼저 실행하세요.');
+  if (!u) throw new Error('PLATFORM_URL 이 없습니다. setupPull() 을 먼저 실행하세요.');
   return u;
 }
 
@@ -590,11 +608,21 @@ function pullAndSend() {
 /** 편집기에서 실행해 연결 상태를 확인한다. */
 function checkPull() {
   var res = callPlatform_('ping', {});
-  Logger.log('플랫폼 응답: ' + JSON.stringify(res));
   var triggers = ScriptApp.getProjectTriggers().filter(function (t) {
     return t.getHandlerFunction() === 'pullAndSend';
   });
-  Logger.log('등록된 트리거: ' + triggers.length + '개');
-  Logger.log('남은 메일 한도: ' + MailApp.getRemainingDailyQuota());
+  var staff = (res && res.staff) || {};
+
+  Logger.log('───────────────────────────────────────────────');
+  Logger.log('플랫폼 주소      : ' + getPlatformUrl_());
+  Logger.log('1분 트리거       : ' + triggers.length + '개' + (triggers.length ? ' ✅' : ' ❌ setupPull() 을 실행하세요'));
+  Logger.log('시트의 본부 계정 : ' + listStaff_().length + '개');
+  Logger.log('플랫폼에 올라간 것: ' + (staff.count == null ? '(응답 없음)' : staff.count + '개'));
+  Logger.log('마지막 동기화    : ' + (staff.syncedAgoSec == null ? '아직 없음 ❌' : staff.syncedAgoSec + '초 전 ✅'));
+  Logger.log('남은 메일 한도   : ' + MailApp.getRemainingDailyQuota());
+  Logger.log('───────────────────────────────────────────────');
+  if (staff.count === 0 || staff.count == null) {
+    Logger.log('⚠️ 플랫폼에 계정이 0개입니다. setupPull() 을 실행하고 1분 뒤 다시 확인하세요.');
+  }
   return res;
 }
