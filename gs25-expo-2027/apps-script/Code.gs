@@ -539,7 +539,10 @@ function callPlatform_(action, extra) {
 function pullAndSend() {
   var pulled;
   try {
-    pulled = callPlatform_('pull', {});
+    // 본부 계정 원장을 함께 보낸다.
+    // pull 모드에서는 플랫폼이 이 시트를 직접 읽을 수 없으므로,
+    // 트리거가 올 때마다 최신 목록을 실어 보내 로그인 판정에 쓰게 한다.
+    pulled = callPlatform_('pull', { staff: listStaff_() });
   } catch (err) {
     log_('', 'PULL', 'error', String(err), '');
     return;

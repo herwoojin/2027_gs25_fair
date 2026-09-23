@@ -7,6 +7,7 @@ import {
   queueStats,
   verifyPullRequest,
 } from '@/lib/server/mailQueue';
+import { staffDirectoryStatus, syncStaffDirectory } from '@/lib/server/staffDirectory';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,7 +23,14 @@ export const runtime = 'nodejs';
  *       타임스탬프 ±2분, nonce 1회용(10분) — 재전송 불가
  */
 export async function POST(req: NextRequest) {
-  let body: { action?: string; ts?: number; nonce?: string; sig?: string; results?: unknown } = {};
+  let body: {
+    action?: string;
+    ts?: number;
+    nonce?: string;
+    sig?: string;
+    results?: unknown;
+    staff?: unknown;
+  } = {};
   try {
     body = await req.json();
   } catch {
@@ -43,10 +51,15 @@ export async function POST(req: NextRequest) {
   markPulled();
 
   if (body.action === 'pull') {
+    // pull 모드에서는 서버가 Staff 시트를 직접 읽을 수 없다.
+    // Apps Script 가 매번 원장을 함께 보내 주므로 여기서 캐시에 반영한다.
+    const staffSync = syncStaffDirectory(body.staff);
+
     const jobs = claimPending(20);
     return NextResponse.json(
       {
         ok: true,
+        staffSync,
         jobs: jobs.map((j) => ({
           id: j.id,
           email: j.email,
@@ -81,7 +94,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === 'ping') {
-    return NextResponse.json({ ok: true, pong: true, queue: queueStats() });
+    return NextResponse.json({
+      ok: true,
+      pong: true,
+      queue: queueStats(),
+      staff: staffDirectoryStatus(),
+    });
   }
 
   return NextResponse.json({ ok: false, error: 'unknown-action' }, { status: 400 });

@@ -48,6 +48,7 @@ import {
 } from './store';
 import { HttpError, issueSession, logout, readSession, requireOwner, requireStaff } from './session';
 import { enqueueMail, mailerMode, OTP_TTL_SEC, queueStats } from './mailQueue';
+import { lookupStaff, staffDirectoryStatus, staffUidOf } from './staffDirectory';
 import {
   ALLOWED_STAFF_DOMAIN,
   isAllowedStaffEmail,
@@ -67,6 +68,7 @@ export interface Ctx {
 }
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
+const IS_PROD = process.env.NODE_ENV === 'production';
 /** 개발 모드에서만 화면에 OTP 를 보여준다. 운영에서는 절대 반환하지 않는다. */
 const SHOW_DEV_OTP = IS_DEV && process.env.DEV_SHOW_OTP !== 'false';
 
@@ -236,31 +238,8 @@ function allStaff(): StaffLike[] {
   return [...map.values()];
 }
 
-/** Staff 시트에 uid 컬럼이 없으므로 이메일에서 안정적으로 파생시킨다. */
-function staffUidOf(email: string): string {
-  const seeded = STAFF.find((s) => s.email.toLowerCase() === email);
-  if (seeded) return seeded.uid;
-  return `staff_${email.split('@')[0].replace(/[^a-z0-9]+/g, '_')}`;
-}
-
-async function resolveStaff(email: string) {
-  // 1순위: Google Sheets `Staff` 탭 (운영 원장)
-  const sheet = await listStaffFromSheet();
-  if (sheet) {
-    const hit = sheet.find((s) => s.email === email);
-    if (!hit || !hit.active) return null;
-    return {
-      uid: staffUidOf(email),
-      email,
-      name: hit.name || email.split('@')[0],
-      team: hit.team ?? '',
-      role: hit.role,
-      sectionIds: hit.sectionIds ?? [],
-      backupFor: hit.backupFor ?? [],
-    };
-  }
-
-  // 2순위(로컬 개발 — 메일러 미연결): 시드 STAFF + 이메일 접두사로 역할 추론
+/** 시드 STAFF + 이메일 접두사로 역할을 추론한다(로컬 개발 전용 폴백). */
+function resolveSeededStaff(email: string) {
   const seeded = STAFF.find((s) => s.email.toLowerCase() === email);
   const role: 'admin' | 'operator' | 'md' | null = email.startsWith('admin@')
     ? 'admin'
@@ -279,6 +258,38 @@ async function resolveStaff(email: string) {
     sectionIds: seeded?.sectionIds ?? [],
     backupFor: seeded?.backupFor ?? [],
   };
+}
+
+async function resolveStaff(email: string) {
+  // pull 모드: Apps Script 트리거가 1분마다 보내 준 원장 캐시가 유일한 진실이다.
+  // (이 모드에서는 서버가 Apps Script 를 호출할 수 없어 시트를 직접 못 읽는다)
+  if (mailerMode() === 'pull') {
+    const hit = lookupStaff(email);
+    if (hit) return hit;
+    // 로컬 개발 편의: 원장에 없으면 시드 계정으로 대체한다.
+    // 운영에서는 절대 폴백하지 않는다 — 시트에 없는 계정은 로그인되면 안 된다.
+    if (!IS_PROD) return resolveSeededStaff(email);
+    return null;
+  }
+
+  // push 모드 1순위: Google Sheets `Staff` 탭을 직접 조회
+  const sheet = await listStaffFromSheet();
+  if (sheet) {
+    const hit = sheet.find((s) => s.email === email);
+    if (!hit || !hit.active) return null;
+    return {
+      uid: staffUidOf(email),
+      email,
+      name: hit.name || email.split('@')[0],
+      team: hit.team ?? '',
+      role: hit.role,
+      sectionIds: hit.sectionIds ?? [],
+      backupFor: hit.backupFor ?? [],
+    };
+  }
+
+  // 2순위(로컬 개발 — 메일러 미연결): 시드 STAFF
+  return resolveSeededStaff(email);
 }
 
 export async function staffLogin(payload: unknown, ctx: Ctx) {
@@ -304,6 +315,18 @@ export async function staffLogin(payload: unknown, ctx: Ctx) {
 
   const staff = await resolveStaff(email);
   if (!staff) {
+    // 원장 자체를 아직 못 받았다면 "정보 확인" 이 아니라 준비 중임을 알려야 한다.
+    // (Apps Script 트리거가 아직 돌지 않은 배포 직후 상황)
+    // 운영 전용: 트리거가 아직 원장을 보내지 않아 판정 근거 자체가 없는 상태.
+    // (개발에서는 시드 계정이 근거가 되므로 여기 걸리지 않는다)
+    if (IS_PROD && mailerMode() === 'pull' && staffDirectoryStatus().count === 0) {
+      audit({ uid: email, role: 'anonymous', action: 'staff.login.directory_empty', ip: ctx.ip });
+      throw new HttpError(
+        503,
+        '본부 계정 원장을 아직 불러오지 못했습니다. 1분 후 다시 시도해 주세요.',
+        'directory-not-ready',
+      );
+    }
     audit({ uid: email, role: 'anonymous', action: 'staff.login.not_registered', ip: ctx.ip });
     throw new HttpError(400, SAME_ERROR, 'invalid-credentials');
   }
@@ -444,9 +467,10 @@ export async function checkMailer(_payload: unknown, ctx: Ctx) {
             ? `Apps Script 트리거가 ${q.lastPullAgoSec}초째 오지 않았습니다.`
             : 'Apps Script 트리거가 아직 한 번도 오지 않았습니다. installPullTrigger() 를 실행했는지 확인하세요.',
       },
-      staffCount: null,
+      staffCount: staffDirectoryStatus().count,
       allowedDomain: ALLOWED_STAFF_DOMAIN,
       queue: q,
+      directory: staffDirectoryStatus(),
     };
   }
 

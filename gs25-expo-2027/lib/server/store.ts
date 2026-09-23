@@ -134,6 +134,8 @@ interface DB {
   mailQueue: import('./mailQueue').MailJob[];
   /** Apps Script 트리거가 마지막으로 다녀간 시각 */
   mailerLastPullAt?: number;
+  /** 본부 계정 원장을 마지막으로 받은 시각 */
+  staffSyncedAt?: number;
   /** 인바운드 요청 재전송 방지용 nonce */
   pullNonces: Record<string, number>;
   completionCounter: number;
