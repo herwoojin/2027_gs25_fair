@@ -8,12 +8,13 @@ Netlify 사이트 설정에서는 **아무것도 바꾸지 않아도 됩니다.*
 |---|---|---|
 | Base directory | `gs25-expo-2027` | `netlify.toml` |
 | Build command | `npm run build` | `netlify.toml` |
-| Publish directory | **지정하지 않음** | Next.js Runtime 이 자동 설정 |
+| Publish directory | `.next` (base 기준) | `netlify.toml` |
 | Node version | `20` | `netlify.toml` |
 
-> ⚠️ **Publish directory 를 `.next` 로 직접 지정하면 404 가 납니다.**
-> 빌드 산출물이 정적 파일로 그대로 노출되어 index.html 이 없기 때문입니다.
-> Netlify UI 에 값이 들어가 있다면 **비워 주세요.**
+> ⚠️ `publish` 를 비워 두면 Netlify 가 base 와 같은 값으로 잡고,
+> Next.js Runtime 이 `publish directory cannot be the same as the base directory` 로 거부합니다.
+> `netlify.toml` 에 `publish = ".next"` 를 **반드시 명시**하세요(base 기준 상대경로).
+> UI 의 Publish directory 는 `Not set` 으로 두면 됩니다.
 >
 > ⚠️ `netlify.toml` 은 반드시 **저장소 최상위**에 있어야 합니다.
 > 앱 폴더 안에 두면 Netlify 가 읽지 못해 빈 사이트가 배포됩니다.
@@ -91,23 +92,22 @@ Netlify → **Site configuration → Environment variables** 에서 등록합니
 | 증상 | 원인 | 해결 |
 |---|---|---|
 | 전 경로 404 | `netlify.toml` 이 루트에 없음 | 루트에 두기 |
-| 전 경로 404 | UI 에 Publish directory 가 설정됨 (`publishOrigin: ui`) | **UI 에서 비우기** |
+| `publish directory cannot be the same as the base directory` | `netlify.toml` 에 publish 미지정 → base 와 동일해짐 | `publish = ".next"` 추가 |
 | 빌드 성공인데 404 | 로그에 `Installing plugins` 가 없음 = Next.js Runtime 미적용 | `netlify.toml` 의 `[[plugins]]` 확인 |
 | `PHONE_ENC_KEY ... 설정되지 않았습니다` 로 빌드 실패 | 런타임 시크릿이 빌드 타임에 요구됨 | 해결됨(사용 시점 검사로 변경). 그래도 런타임에는 필요하므로 환경변수 등록 필수 |
 
-### UI 설정에서 반드시 비워야 하는 항목
+### UI 설정 (Developer settings → Build settings)
 
-Netlify UI 값은 `netlify.toml` 보다 **우선**합니다.
-**Site configuration → Build & deploy → Build settings** 에서:
+전부 `Not set` 으로 두면 됩니다. `netlify.toml` 이 모두 지정합니다.
 
-| 항목 | 값 |
+| 항목 | UI 값 |
 |---|---|
-| Base directory | 비움 (또는 `gs25-expo-2027`) |
-| Build command | 비움 (또는 `npm run build`) |
-| **Publish directory** | **반드시 비움** |
+| Base directory | `/` 또는 Not set |
+| Build command | Not set |
+| Publish directory | Not set |
+| Functions directory | `netlify/functions` (기본값, 무관) |
 
-배포 로그의 `publishOrigin: ui` 는 UI 값이 덮어쓰고 있다는 뜻입니다.
-비우면 `publishOrigin` 이 사라지고 Next.js Runtime 이 알아서 설정합니다.
+> 로그의 `publishOrigin` 이 `config` 로 바뀌면 `netlify.toml` 값이 적용된 것입니다.
 
 배포 로그(**Deploys → 해당 배포 → Deploy log**)에서 아래 두 줄이 보여야 정상입니다.
 

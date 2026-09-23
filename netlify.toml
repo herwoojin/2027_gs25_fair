@@ -8,9 +8,12 @@
   # 빌드 전에 이 디렉터리로 이동한다. npm install · npm run build 가 여기서 실행된다.
   base = "gs25-expo-2027"
   command = "npm run build"
-  # publish 는 지정하지 않는다.
-  # Next.js Runtime(자동 설치)이 서버리스 함수와 정적 자산 경로를 알아서 설정한다.
-  # 여기서 ".next" 를 직접 지정하면 빌드 산출물이 정적 파일로 그대로 노출되어 404 가 난다.
+  # Next.js 빌드 산출물. base 기준 상대경로이므로 gs25-expo-2027/.next 를 가리킨다.
+  #
+  # 반드시 명시해야 한다. 비워 두면 Netlify 가 publish 를 base 와 같게 잡는데,
+  # Next.js Runtime 이 "publish directory cannot be the same as the base directory" 로 거부한다.
+  # 이 경로는 Runtime 이 읽어 서버리스 함수와 정적 자산으로 변환한다(정적 노출이 아니다).
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
