@@ -15,6 +15,21 @@
 3. 좌측 **프로젝트 설정 → "`appsscript.json` 매니페스트 파일을 편집기에 표시"** 를 켜고,
    `appsscript.json` 을 [이 폴더의 파일](appsscript.json)로 교체합니다.
 
+> ⚠️ **매니페스트 교체를 건너뛰면 트리거 설치가 실패합니다.**
+> `Specified permissions are not sufficient to call ScriptApp.getProjectTriggers` 오류가 그것입니다.
+> 필요한 권한 5가지가 매니페스트에 들어 있어야 합니다.
+>
+> | 권한 | 쓰이는 곳 |
+> |---|---|
+> | `spreadsheets` | `Staff` 원장 읽기 · `MailLogs` 기록 |
+> | `script.send_mail` | 인증번호 메일 발송 |
+> | `script.scriptapp` | 1분 주기 트리거 설치 (pull 모드) |
+> | `script.external_request` | 플랫폼 `/api/mail-queue` 호출 (pull 모드) |
+> | `userinfo.email` | `testSend()` 의 본인 계정 확인 |
+>
+> 매니페스트를 바꾸면 **권한 승인 창이 다시 뜹니다.** 승인해야 적용됩니다.
+> (push 모드로 웹앱 배포까지 하려면 `"webapp": { "executeAs": "USER_DEPLOYING", "access": "ANYONE_ANONYMOUS" }` 를 추가하세요. pull 모드에는 필요 없습니다.)
+
 > 스크립트가 스프레드시트에 종속(bound)되어 있지 않아도 됩니다.
 > `SpreadsheetApp.openById(SHEET_ID)` 로 접근하므로 독립 프로젝트에서도 동작합니다.
 
