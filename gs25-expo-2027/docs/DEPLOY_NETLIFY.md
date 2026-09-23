@@ -29,7 +29,7 @@ Netlify → **Site configuration → Environment variables** 에서 등록합니
 
 | 키 | 값 |
 |---|---|
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | `AIzaSyB6fSlhJVJLZdV7VkLLy-im6pcF5Ddxamo` |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase 콘솔 → 프로젝트 설정 → 웹 앱 의 `apiKey` |
 | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `gs25-fair.firebaseapp.com` |
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `gs25-fair` |
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `gs25-fair.firebasestorage.app` |
@@ -52,22 +52,28 @@ Netlify → **Site configuration → Environment variables** 에서 등록합니
 | 키 | 값 |
 |---|---|
 | `MAILER_MODE` | `pull` |
-| `APPS_SCRIPT_KEY` | `3c7c07d9f2d94d07af660209519fedb925c873d6ba484d629a77a2756248d862` |
+| `APPS_SCRIPT_KEY` | Apps Script 편집기에서 `setup()` 실행 시 로그에 출력된 `SHARED_KEY` |
 
 > `APPS_SCRIPT_URL` 은 **넣지 않습니다.** GS리테일 Workspace 가 익명 웹앱 배포를 막고 있어,
 > Apps Script 트리거가 1분마다 `https://<사이트>/api/mail-queue` 로 찾아오는 방식(pull)을 씁니다.
 
 ### 개인정보 암호화 키 (새로 생성한 값)
 
+아래 명령으로 **각자 생성**해서 Netlify 환경변수에만 넣습니다.
+저장소에는 절대 적지 않습니다(적으면 Netlify 시크릿 스캐너가 빌드를 막습니다).
+
+```bash
+node -e "console.log('PHONE_ENC_KEY =', require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log('PHONE_HMAC_KEY=', require('crypto').randomBytes(32).toString('hex'))"
+```
+
 | 키 | 값 |
 |---|---|
-| `PHONE_ENC_KEY` | `317b1c84c7742957e0df215157b8a84eef6b3c592ad32e475ce9ef91fc03bd61` |
-| `PHONE_HMAC_KEY` | `2ff73e0e68c6573579b20e0eb6d61d6613db9f81e52b4512ffc07c1af4ce5ee6` |
+| `PHONE_ENC_KEY` | 위에서 생성한 64자 hex |
+| `PHONE_HMAC_KEY` | 위에서 생성한 64자 hex |
 
 > ⚠️ 이 두 값은 **한 번 정하면 바꾸면 안 됩니다.** 바꾸면 기존에 암호화된 전화번호를
 > 복호화할 수 없고, 저장된 뒷4자리 해시도 전부 불일치가 됩니다.
-> 위 값은 이 문서에 적혀 있으므로 저장소가 공개라면 **Netlify 에서 새로 생성해 교체**하세요.
-> 생성: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ### 운영 안전장치
 
@@ -119,6 +125,19 @@ Next.js cache saved / Next.js Runtime ...
 ```
 
 `Base directory: gs25-expo-2027` 도 로그 상단에 찍힙니다. 안 보이면 `netlify.toml` 을 못 읽은 것입니다.
+
+## 1-2. 시크릿 스캐너
+
+Netlify 는 환경변수 값이 저장소 파일이나 빌드 산출물에 있으면 빌드를 막습니다.
+
+- **진짜 비밀키**(`APPS_SCRIPT_KEY` · `PHONE_*`)는 저장소에 적지 마세요. 환경변수에만 넣습니다.
+- **`NEXT_PUBLIC_*` 는 원래 브라우저 번들에 들어가는 공개값**이라 스캔 대상에서 제외해야 합니다.
+  `netlify.toml` 의 `SECRETS_SCAN_OMIT_KEYS` 가 이를 처리합니다.
+
+```toml
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_APP_ID,..."
+```
 
 ## 2. 배포 후 Apps Script 연결
 

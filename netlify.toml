@@ -20,6 +20,12 @@
   # 빌드 로그를 줄이고 설치 속도를 높인다
   NPM_FLAGS = "--no-audit --no-fund"
 
+  # NEXT_PUBLIC_* 은 설계상 브라우저 번들에 포함되는 **공개값**이다.
+  # Netlify 시크릿 스캐너는 이를 유출로 오인해 빌드를 막으므로 명시적으로 제외한다.
+  # (진짜 비밀키 APPS_SCRIPT_KEY · PHONE_ENC_KEY · PHONE_HMAC_KEY 는 여기 넣지 않는다.
+  #  그 값들은 저장소 어디에도 없어야 하고, 스캐너가 계속 감시해야 한다.)
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_APP_ID,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,NEXT_PUBLIC_APPCHECK_SITE_KEY,NEXT_PUBLIC_DEMO_MODE,NEXT_PUBLIC_OPEN_AT,NEXT_PUBLIC_TOUR_START_AT,NEXT_PUBLIC_CLOSE_AT"
+
 # Next.js Runtime — 서버리스 함수(API Route · SSR)를 생성한다.
 # 자동 감지에 맡기면 base 가 하위 디렉터리일 때 적용되지 않는 경우가 있어 명시한다.
 # (package.json 에는 넣지 않는다. Netlify 가 설치·버전 관리를 맡는다)
