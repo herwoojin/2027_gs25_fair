@@ -1,7 +1,7 @@
 {
   "project": "2027 GS25 상품전략공유회 온라인 전시 플랫폼",
   "description": "전국 9개 도시 순회 오프라인 공유회와 동일한 동선·진열을 3D 웹앱으로 재현한 폐쇄형 온라인 전시 플랫폼. 사전 등록된 GS25 경영주만 로그인해 섹션별 상품 설명을 듣고·읽고·퀴즈를 풀어 스탬프 11개를 모은다.",
-  "lastUpdated": "2026-09-23",
+  "lastUpdated": "2026-09-25",
   "repo": "gs25-expo-2027",
   "reference": "2026년판 25fair.vercel.app — 카메라 스플라인 투어 · 도시별 accent 리테마 · 시네마틱 질감(레터박스/그레인/비네트) 연출 문법을 참조해 2027 랜딩에 이식",
   "architectureSummary": "Next.js 14(App Router) 프런트엔드 + Firebase(Auth/Firestore/Functions 2nd gen/Storage/App Check) 백엔드. 스탬프·퀴즈 채점·SMS·AI 호출은 전부 Cloud Functions(asia-northeast3)에서만 수행하고, 클라이언트는 Firestore 보안 규칙으로 최소 권한만 갖는다. 랭킹·워드클라우드·통계는 스케줄 함수가 aggregates/* 단일 문서로 요약해 동시접속 3,000명에서도 읽기 비용을 억제한다. 로컬 개발에서는 Firebase 없이도 동일한 서버 판정을 재현하는 Next API Route 백엔드(lib/server/**)로 폴백한다.",
@@ -248,6 +248,12 @@
           "version": "—",
           "purpose": "개발 모드 전용 Firestore 대역(.devdata/db.json)",
           "config": "lib/server/store.ts"
+        },
+        {
+          "name": "Netlify Blobs (@netlify/blobs)",
+          "version": "11.1.1",
+          "purpose": "서버리스 인스턴스 간 공유 상태. 인증번호 세션·메일 대기열·본부 계정 원장·세션 토큰을 담아, 요청마다 컨테이너가 바뀌어도 로그인과 메일 발송이 이어지게 한다.",
+          "config": "lib/server/sharedState.ts · 넷리파이 런타임에서만 활성(로컬은 자동으로 메모리 폴백)"
         }
       ]
     },

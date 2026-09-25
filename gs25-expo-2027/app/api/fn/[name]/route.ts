@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HANDLERS, type HandlerName, type Ctx } from '@/lib/server/handlers';
 import { HttpError } from '@/lib/server/session';
+import { hydrateShared, flushShared } from '@/lib/server/sharedState';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -34,10 +35,15 @@ export async function POST(req: NextRequest, { params }: { params: { name: strin
     payload = {};
   }
 
+  // 서버리스 인스턴스가 갈려도 세션·대기열이 이어지도록 공유 상태를 먼저 읽는다.
+  await hydrateShared();
+
   try {
     const result = await (handler as (p: unknown, c: Ctx) => Promise<unknown>)(payload, ctx);
+    await flushShared();
     return NextResponse.json({ result }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
+    await flushShared();
     if (err instanceof HttpError) {
       return NextResponse.json(
         { error: { code: err.code ?? 'error', message: err.message, ...(err.extra ?? {}) } },

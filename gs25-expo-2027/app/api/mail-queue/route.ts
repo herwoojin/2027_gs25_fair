@@ -8,6 +8,7 @@ import {
   verifyPullRequest,
 } from '@/lib/server/mailQueue';
 import { staffDirectoryStatus, syncStaffDirectory } from '@/lib/server/staffDirectory';
+import { hydrateShared, flushShared } from '@/lib/server/sharedState';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -42,20 +43,26 @@ export async function POST(req: NextRequest) {
     req.headers.get('x-real-ip') ??
     '0.0.0.0';
 
+  // Apps Script 가 어느 인스턴스로 오든 같은 대기열을 보도록 먼저 읽는다.
+  await hydrateShared();
+
   const err = verifyPullRequest(body);
   if (err) {
     audit({ uid: 'apps-script', role: 'system', action: 'mailqueue.unauthorized', ip, detail: err });
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  markPulled();
-
   if (body.action === 'pull') {
+    // 실제 트리거가 다녀간 것만 기록한다. ping 까지 세면
+    // "트리거가 도는지" 를 이 값으로 판단할 수 없게 된다.
+    markPulled();
+
     // pull 모드에서는 서버가 Staff 시트를 직접 읽을 수 없다.
     // Apps Script 가 매번 원장을 함께 보내 주므로 여기서 캐시에 반영한다.
     const staffSync = syncStaffDirectory(body.staff);
 
     const jobs = claimPending(20);
+    await flushShared();
     return NextResponse.json(
       {
         ok: true,
@@ -90,6 +97,7 @@ export async function POST(req: NextRequest) {
         detail: `성공 ${sent} 실패 ${failed}`,
       });
     }
+    await flushShared();
     return NextResponse.json({ ok: true, sent, failed }, { headers: { 'Cache-Control': 'no-store' } });
   }
 
