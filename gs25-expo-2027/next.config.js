@@ -8,12 +8,12 @@ const csp = [
   "default-src 'self'",
   // Next.js 는 인라인 부트스트랩 스크립트를 사용하므로 'unsafe-inline' 이 필요하다.
   // 개발 모드는 react-refresh 때문에 'unsafe-eval' 도 필요.
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://apis.google.com`,
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval'" : ''} https://www.gstatic.com https://www.google.com https://www.recaptcha.net https://apis.google.com https://dapi.kakao.com https://*.daumcdn.net`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://firebasestorage.googleapis.com https://*.firebasestorage.app https://i.ytimg.com",
+  "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://firebasestorage.googleapis.com https://*.firebasestorage.app https://i.ytimg.com https://*.daumcdn.net https://*.kakaocdn.net https://map.kakao.com https://*.kakao.com",
   "media-src 'self' blob: https://*.googleapis.com https://firebasestorage.googleapis.com https://*.firebasestorage.app",
   "font-src 'self' data:",
-  `connect-src 'self' ${isDev ? 'ws: http://127.0.0.1:* http://localhost:*' : ''} https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://firebaseinstallations.googleapis.com https://content-firebaseappcheck.googleapis.com https://*.firebasestorage.app`,
+  `connect-src 'self' ${isDev ? 'ws: http://127.0.0.1:* http://localhost:*' : ''} https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.cloudfunctions.net https://firebaseinstallations.googleapis.com https://content-firebaseappcheck.googleapis.com https://*.firebasestorage.app https://dapi.kakao.com https://*.daumcdn.net https://*.kakao.com`,
   "frame-src 'self' https://www.youtube-nocookie.com https://www.google.com https://*.firebaseapp.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

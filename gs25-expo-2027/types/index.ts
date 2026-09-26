@@ -242,6 +242,29 @@ export interface ChatTurn {
   tokensUsed?: number;
 }
 
+/** 오시는 길 — 대중교통 안내 */
+export interface VenueTransit {
+  /** 지하철·기차 (없는 지역은 빈 배열) */
+  rail: string[];
+  /** 버스 */
+  bus: string[];
+  /** 공항·고속버스 등 그 밖의 경로 */
+  etc: string[];
+  /** 도보 안내 한 줄 */
+  walk?: string;
+}
+
+/** 오시는 길 — 주차 안내 */
+export interface VenueParking {
+  available: boolean;
+  /** 주차 면수 */
+  capacity?: string;
+  /** 요금 안내 */
+  fee?: string;
+  /** 진입로·혼잡 시간 등 */
+  note?: string;
+}
+
 export interface ExpoEvent {
   id: string;
   city: string;
@@ -253,6 +276,8 @@ export interface ExpoEvent {
   startDate: string;
   endDate: string;
   order: number;
+  transit?: VenueTransit;
+  parking?: VenueParking;
 }
 
 export const SLOT_TIMES: Record<number, string> = {

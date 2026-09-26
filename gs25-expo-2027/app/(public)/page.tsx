@@ -12,6 +12,7 @@ import { formatDateTimeKo, formatRange } from '@/lib/utils';
 import { themeOf } from '@/lib/cityTheme';
 import { useViewMode } from '@/lib/gpuTier';
 import { Countdown } from '@/components/public/Countdown';
+import { HeroVideo } from '@/components/public/HeroVideo';
 import { PopupNews } from '@/components/common/PopupNews';
 import { BrandMark } from '@/components/common/AppShell';
 import { FilmOverlay } from '@/components/common/FilmOverlay';
@@ -58,6 +59,8 @@ export default function LandingPage() {
   const [now, setNow] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string>('seoul');
   const [playing, setPlaying] = useState(true);
+  // 히어로 인트로 영상이 끝나면 3D 투어로 넘긴다.
+  const [introDone, setIntroDone] = useState(false);
 
   const progressRef = useRef(0);
   const barRef = useRef<HTMLDivElement>(null);
@@ -109,6 +112,9 @@ export default function LandingPage() {
     return () => cancelAnimationFrame(raf);
   }, [playing, use3D, cities.length, paint]);
 
+  // HeroVideo 의 effect 의존성이므로 참조가 안정적이어야 한다.
+  const onIntroEnd = useCallback(() => setIntroDone(true), []);
+
   const seekTo = useCallback(
     (ratio: number) => {
       progressRef.current = Math.min(0.999, Math.max(0, ratio));
@@ -145,17 +151,27 @@ export default function LandingPage() {
 
       {/* ═══ 히어로: 시네마틱 투어 ═══ */}
       <section className="relative h-dvh min-h-[38rem] w-full overflow-hidden">
-        {/* 3D 배경 */}
+        {/* 배경 — 실사 영상이 먼저 깔리고, 3D 기기에서는 투어가 이어받는다 */}
         <div className="absolute inset-0">
-          {use3D && cities.length > 0 ? (
-            <CinematicTour
-              cities={cities}
-              progressRef={progressRef}
-              onCityChange={setActiveId}
-              quality={quality}
+          <StaticHeroBackdrop accent={theme.accent} />
+          {use3D && cities.length > 0 && (
+            <div
+              className="absolute inset-0 transition-opacity duration-[1200ms] ease-out"
+              style={{ opacity: introDone ? 1 : 0 }}
+            >
+              <CinematicTour
+                cities={cities}
+                progressRef={progressRef}
+                onCityChange={setActiveId}
+                quality={quality}
+              />
+            </div>
+          )}
+          {mode !== null && (
+            <HeroVideo
+              mode={use3D && cities.length > 0 ? 'intro' : 'loop'}
+              onIntroEnd={onIntroEnd}
             />
-          ) : (
-            <StaticHeroBackdrop accent={theme.accent} />
           )}
         </div>
 
@@ -164,7 +180,7 @@ export default function LandingPage() {
           className="pointer-events-none absolute inset-0 z-10"
           style={{
             background:
-              'linear-gradient(to bottom, rgb(5 10 24 / 0.82) 0%, rgb(5 10 24 / 0.25) 38%, rgb(5 10 24 / 0.55) 68%, rgb(5 10 24 / 0.95) 100%)',
+              'linear-gradient(to bottom, rgb(5 10 24 / 0.88) 0%, rgb(5 10 24 / 0.62) 34%, rgb(5 10 24 / 0.72) 66%, rgb(5 10 24 / 0.97) 100%)',
           }}
         />
         <FilmOverlay letterbox grain vignette scanline accent={theme.accent} />
@@ -198,9 +214,10 @@ export default function LandingPage() {
               <Lock size={14} /> 등록 경영주 전용
             </motion.p>
 
+            {/* 공식 영문 명칭은 GS25 PRODUCT SHOW — 행사 간판·기존 전시회 표기와 맞춘다 */}
             <h1 className="text-[2.6rem] font-black leading-[1.08] tracking-tight sm:text-7xl">
-              <RevealText text="2027" delay={0.15} className="block text-white/55" />
-              <RevealText text="GS25 상품전략공유회" delay={0.35} className="block" />
+              <RevealText text="GS25 PRODUCT SHOW" delay={0.15} className="block text-white/55 text-[1.55rem] sm:text-4xl" />
+              <RevealText text="2027 상품전략공유회" delay={0.35} className="block" />
             </h1>
 
             <motion.p

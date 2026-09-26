@@ -3,7 +3,7 @@
 > 전국 9개 도시 순회 공유회와 **동일한 동선·진열을 3D 웹으로 재현**한 폐쇄형 전시 플랫폼.
 > 사전 등록 경영주만 로그인해 섹션별 상품을 듣고·읽고·퀴즈를 풀어 **스탬프 11개**를 모은다.
 >
-> **마지막 업데이트: 2026-09-25** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
+> **마지막 업데이트: 2026-09-27** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
 >
 > Firebase 프로젝트: **`gs25-fair`** (2027-gs25-fair · 270897004705 · doridorimammam-org)
 
@@ -136,6 +136,7 @@ flowchart TB
 | SOLAPI (Functions 경로) | SDK 5.3 | 동일 기능 | `functions/src/shared/solapi.ts` | Firebase 배포 시에만 사용 |
 | Google Sheets API | 140 | 백업 원장 · 화이트리스트 | `functions/src/shared/sheets.ts` | |
 | MS Power Automate | — | 일일 리포트 · 명단 갱신 HTTP | `functions/src/sync/index.ts` | `X-Integration-Key` timing-safe |
+| 카카오맵 | JS SDK v2 | 순회 9개 도시 오시는 길 · 길찾기/로드뷰 | `lib/kakaoMap.ts` | 링크는 키 불필요, 임베드만 키 필요 |
 | YouTube (nocookie) | — | MD 라이브 임베드 | `app/(app)/live/page.tsx` | 일부공개, 로그인 사용자만 |
 
 ### 2.7 보안

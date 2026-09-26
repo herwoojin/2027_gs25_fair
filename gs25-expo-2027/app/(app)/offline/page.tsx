@@ -11,6 +11,7 @@ import { callFn } from '@/lib/api';
 import { cn, formatRange } from '@/lib/utils';
 import { themeOf } from '@/lib/cityTheme';
 import { Reveal } from '@/components/common/Reveal';
+import { VenueDirections } from '@/components/public/VenueDirections';
 
 /** T7-1 · /offline — 9개 도시 순회 지도 · 타임라인 · 도시 상세 */
 export default function OfflinePage() {
@@ -134,6 +135,9 @@ export default function OfflinePage() {
               event={active}
               slots={(data?.slots ?? []).filter((s) => s.eventId === active.id)}
             />
+            <div className="mt-4">
+              <VenueDirections event={active} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

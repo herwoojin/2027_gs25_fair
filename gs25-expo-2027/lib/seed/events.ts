@@ -23,6 +23,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(0),
     endDate: dayOffset(4),
     order: 1,
+    transit: {
+      rail: ['수도권 2호선 역삼역 하차'],
+      bus: [],
+      etc: [],
+      walk: '역에서 도보 이동 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: '건물 주차장 이용. 만차가 잦아 대중교통을 권장합니다.' },
   },
   {
     id: 'gyeonggi',
@@ -35,6 +42,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(5),
     endDate: dayOffset(9),
     order: 2,
+    transit: {
+      rail: ['신분당선 광교중앙역 하차'],
+      bus: [],
+      etc: [],
+      walk: '역에서 도보 이동 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: '컨벤션센터 주차장 이용.' },
   },
   {
     id: 'gangwon',
@@ -47,6 +61,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(11),
     endDate: dayOffset(12),
     order: 3,
+    transit: {
+      rail: ['경춘선 남춘천역 하차'],
+      bus: [],
+      etc: ['서울 방면 시외·고속버스 춘천터미널 하차'],
+      walk: '역·터미널에서 택시 또는 시내버스 환승.',
+    },
+    parking: { available: true, note: '호텔 주차장 이용.' },
   },
   {
     id: 'chungcheong',
@@ -59,6 +80,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(13),
     endDate: dayOffset(15),
     order: 4,
+    transit: {
+      rail: ['KTX 대전역에서 시내버스·택시 환승'],
+      bus: [],
+      etc: [],
+      walk: '엑스포과학공원 일대 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: '컨벤션센터 주차장 이용.' },
   },
   {
     id: 'daegu',
@@ -71,6 +99,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(18),
     endDate: dayOffset(20),
     order: 5,
+    transit: {
+      rail: ['KTX 동대구역에서 시내버스·택시 환승'],
+      bus: [],
+      etc: [],
+      walk: '엑스코 정문 방향 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: '엑스코 주차장 이용.' },
   },
   {
     id: 'ulsan',
@@ -83,6 +118,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(21),
     endDate: dayOffset(22),
     order: 6,
+    transit: {
+      rail: ['KTX 울산역에서 리무진버스·택시 환승 (울산에는 도시철도가 없습니다)'],
+      bus: [],
+      etc: ['울산고속버스터미널에서 도보·택시'],
+      walk: '삼산동 일대 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: '전시장 주차장 이용.' },
   },
   {
     id: 'busan',
@@ -95,6 +137,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(25),
     endDate: dayOffset(28),
     order: 7,
+    transit: {
+      rail: ['부산 2호선 벡스코역 하차', '부산 2호선 센텀시티역 하차'],
+      bus: [],
+      etc: [],
+      walk: '역에서 도보 이동 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: 'BEXCO 주차장 이용. 행사일 혼잡이 예상됩니다.' },
   },
   {
     id: 'gwangju',
@@ -107,6 +156,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(29),
     endDate: dayOffset(32),
     order: 8,
+    transit: {
+      rail: ['광주 1호선 김대중컨벤션센터역 하차'],
+      bus: [],
+      etc: [],
+      walk: '역과 바로 연결됩니다.',
+    },
+    parking: { available: true, note: '컨벤션센터 주차장 이용.' },
   },
   {
     id: 'jeju',
@@ -119,6 +175,13 @@ export const EVENTS: ExpoEvent[] = [
     startDate: dayOffset(34),
     endDate: dayOffset(35),
     order: 9,
+    transit: {
+      rail: [],
+      bus: [],
+      etc: ['제주국제공항에서 리무진버스 또는 택시 (제주에는 철도가 없습니다)'],
+      walk: '중문관광단지 내 · 자세한 경로는 아래 카카오맵 길찾기를 이용해 주세요.',
+    },
+    parking: { available: true, note: 'ICC JEJU 주차장 이용.' },
   },
 ];
 

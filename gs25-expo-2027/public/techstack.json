@@ -1,7 +1,7 @@
 {
   "project": "2027 GS25 상품전략공유회 온라인 전시 플랫폼",
   "description": "전국 9개 도시 순회 오프라인 공유회와 동일한 동선·진열을 3D 웹앱으로 재현한 폐쇄형 온라인 전시 플랫폼. 사전 등록된 GS25 경영주만 로그인해 섹션별 상품 설명을 듣고·읽고·퀴즈를 풀어 스탬프 11개를 모은다.",
-  "lastUpdated": "2026-09-25",
+  "lastUpdated": "2026-09-27",
   "repo": "gs25-expo-2027",
   "reference": "2026년판 25fair.vercel.app — 카메라 스플라인 투어 · 도시별 accent 리테마 · 시네마틱 질감(레터박스/그레인/비네트) 연출 문법을 참조해 2027 랜딩에 이식",
   "architectureSummary": "Next.js 14(App Router) 프런트엔드 + Firebase(Auth/Firestore/Functions 2nd gen/Storage/App Check) 백엔드. 스탬프·퀴즈 채점·SMS·AI 호출은 전부 Cloud Functions(asia-northeast3)에서만 수행하고, 클라이언트는 Firestore 보안 규칙으로 최소 권한만 갖는다. 랭킹·워드클라우드·통계는 스케줄 함수가 aggregates/* 단일 문서로 요약해 동시접속 3,000명에서도 읽기 비용을 억제한다. 로컬 개발에서는 Firebase 없이도 동일한 서버 판정을 재현하는 Next API Route 백엔드(lib/server/**)로 폴백한다.",
@@ -131,6 +131,11 @@
           "version": "framer-motion",
           "purpose": "앱 내 페이지 전환 페이드·업 (AnimatePresence)",
           "config": "components/common/AppShell.tsx"
+        },
+        {
+          "name": "히어로 배경 영상 (HeroVideo)",
+          "purpose": "랜딩 히어로 배경. 3D 기기에서는 인트로로 1회 재생 후 시네마틱 투어로 전환, 그 외에는 반복 재생. 동작 줄이기·자동재생 차단 시 poster 정지화면.",
+          "config": "components/public/HeroVideo.tsx · public/media/hero-2027.mp4 (1.6MB)"
         }
       ]
     },
@@ -294,6 +299,11 @@
           "version": "Apps Script",
           "purpose": "본부 인증번호 메일 발송. 일일 한도 개인 100 / Workspace 1,500통",
           "config": "apps-script/Code.gs"
+        },
+        {
+          "name": "카카오맵 (Kakao Maps)",
+          "purpose": "오프라인 순회 9개 도시의 오시는 길. 길찾기·로드뷰·크게보기는 지도 URL 링크(키 불필요), 약도 임베드는 JavaScript SDK.",
+          "config": "lib/kakaoMap.ts · components/public/VenueDirections.tsx · NEXT_PUBLIC_KAKAO_MAP_KEY (미설정 시 임베드만 생략)"
         }
       ]
     },
