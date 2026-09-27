@@ -320,9 +320,17 @@ function splitList_(v) {
     });
 }
 
+/**
+ * 활성 여부.
+ *
+ * **빈 칸은 활성으로 본다.** 예전에는 빈 칸을 비활성으로 봤는데,
+ * 행을 추가하면서 active 칸을 채우지 않으면 계정이 조용히 사라져 로그인이 막혔다.
+ * 비활성은 FALSE / N / 0 / X / 비활성 처럼 **명시적으로** 적었을 때만이다.
+ */
 function isTrue_(v) {
   var s = String(v == null ? '' : v).trim().toUpperCase();
-  return s === 'Y' || s === 'TRUE' || s === '1' || s === 'O' || s === '활성';
+  if (s === '') return true;
+  return !(s === 'FALSE' || s === 'N' || s === '0' || s === 'X' || s === '비활성' || s === 'NO');
 }
 
 // ── 유틸 ─────────────────────────────────────────────────────────
@@ -748,7 +756,15 @@ function checkPull() {
   Logger.log('───────────────────────────────────────────────');
   Logger.log('플랫폼 주소      : ' + getPlatformUrl_());
   Logger.log('1분 트리거       : ' + triggers.length + '개' + (triggers.length ? ' ✅' : ' ❌ setupPull() 을 실행하세요'));
-  Logger.log('시트의 본부 계정 : ' + listStaff_().length + '개');
+  var staffRows = listStaff_();
+  Logger.log('시트의 본부 계정 : ' + staffRows.length + '개');
+  for (var i = 0; i < staffRows.length; i++) {
+    Logger.log(
+      '   - ' + maskEmail_(staffRows[i].email) +
+      ' / ' + (staffRows[i].role || '-') +
+      ' / ' + (staffRows[i].active ? '활성' : '비활성 ← 로그인 불가'),
+    );
+  }
   Logger.log('플랫폼에 올라간 것: ' + (staff.count == null ? '(응답 없음)' : staff.count + '개'));
   Logger.log('마지막 동기화    : ' + (staff.syncedAgoSec == null ? '아직 없음 ❌' : staff.syncedAgoSec + '초 전 ✅'));
   Logger.log('남은 메일 한도   : ' + MailApp.getRemainingDailyQuota());

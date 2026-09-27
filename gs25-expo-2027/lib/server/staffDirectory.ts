@@ -64,7 +64,11 @@ export function syncStaffDirectory(rows: unknown): { synced: number; removed: nu
     const uid = staffUidOf(email);
     seen.add(uid);
 
-    if (r.active === false) {
+    // 비활성은 명시적으로 적었을 때만이다. 빈 칸·미지정은 활성으로 본다.
+    // (빈 칸을 비활성으로 보면 시트에 행을 추가해도 계정이 조용히 사라진다)
+    const flag = String(r.active ?? '').trim().toLowerCase();
+    const inactive = r.active === false || ['false', 'n', '0', 'x', 'no', '비활성'].includes(flag);
+    if (inactive) {
       if (db.staffDirectory[uid]) {
         delete db.staffDirectory[uid];
         removed += 1;
@@ -101,8 +105,18 @@ export function lookupStaff(email: string): StaffEntry | null {
   return db.staffDirectory[staffUidOf(email)] ?? null;
 }
 
+/** 이메일 앞 두 글자만 남긴다. 진단용이라 원문을 내보내지 않는다. */
+function mask(email: string): string {
+  const [local, domain] = email.split('@');
+  const head = local.slice(0, 2);
+  return `${head}${'*'.repeat(Math.max(1, local.length - head.length))}@${domain}`;
+}
+
 export function staffDirectoryStatus() {
   return {
+    // 시트에서 무엇이 읽혔는지 바로 확인할 수 있어야 한다.
+    // 행을 추가했는데 로그인이 안 되는 경우, 여기 없으면 시트가 원인이다.
+    emails: Object.values(db.staffDirectory).map((e) => `${mask(e.email)}(${e.role})`),
     count: Object.keys(db.staffDirectory).length,
     syncedAt: db.staffSyncedAt ?? null,
     syncedAgoSec: db.staffSyncedAt ? Math.round((Date.now() - db.staffSyncedAt) / 1000) : null,
