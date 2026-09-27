@@ -14,6 +14,8 @@ import { useViewMode } from '@/lib/gpuTier';
 import { Countdown } from '@/components/public/Countdown';
 import { HeroVideo } from '@/components/public/HeroVideo';
 import { GuideMap } from '@/components/public/GuideMap';
+import { StrategyHelperBlock } from '@/components/public/StrategyHelperBlock';
+import { MentorBlock } from '@/components/public/MentorBlock';
 import { PopupNews } from '@/components/common/PopupNews';
 import { BrandMark } from '@/components/common/AppShell';
 import { FilmOverlay } from '@/components/common/FilmOverlay';
@@ -395,8 +397,14 @@ export default function LandingPage() {
       {/* ═══ 가이드맵 — 어떤 전략이 나올지 미리 보여 현장 방문으로 잇는다 ═══ */}
       <GuideMap accent={theme.accent} />
 
+      {/* ═══ 신규 코너 — 지역별 상품전략도우미 (히어로 아래 세 번째) ═══ */}
+      <StrategyHelperBlock accent={theme.accent} />
+
       {/* ═══ 기념품 티저 ═══ */}
       <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />
+
+      {/* ═══ 지역 멘토 경영주 ═══ */}
+      <MentorBlock accent={theme.accent} />
 
       {/* ═══ 사전 알림 ═══ */}
       <PreNotifyForm accent={theme.accent} />
