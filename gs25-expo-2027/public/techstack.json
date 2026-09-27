@@ -146,6 +146,11 @@
           "name": "군중 캔버스 (CrowdCanvas)",
           "purpose": "지역 멘토 경영주 섹션 배경. 스프라이트 시트에서 잘라낸 인물이 좌우로 걸어 다닌다. Skiper39/codepen 원안은 gsap 을 쓰지만, 배경 장식에 70KB 라이브러리를 더할 이유가 없어 requestAnimationFrame 으로 직접 구현했다.",
           "config": "components/ui/crowd-canvas.tsx · public/media/crowd.png (Open Peeps, CC0, 자체 호스팅 205KB)"
+        },
+        {
+          "name": "나선 파티클 (SpiralAnimation)",
+          "purpose": "상품전략도우미 섹션 배경. 나선을 따라 달리는 머리에서 입자가 퍼져 나가며 3D 투영으로 카메라가 그 사이를 통과한다. 한 곳에서 전국으로 뻗어 나가는 방송을 나타낸다.",
+          "config": "components/ui/spiral-animation.tsx · 섹션 강조색으로 물들임 · 화면 밖·숨김 탭에서 자동 정지"
         }
       ]
     },

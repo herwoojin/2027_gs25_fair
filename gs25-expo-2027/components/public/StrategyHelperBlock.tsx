@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Clock, MessageCircleQuestion, Radio, Sparkles } from 'lucide-react';
 import { STRATEGY_HELPERS } from '@/lib/seed/outreach';
 import { Reveal } from '@/components/common/Reveal';
+import { SpiralAnimation } from '@/components/ui/spiral-animation';
 
 /**
  * 2027 신규 코너 — 지역별 상품전략도우미.
@@ -15,8 +16,26 @@ import { Reveal } from '@/components/common/Reveal';
  */
 export function StrategyHelperBlock({ accent }: { accent: string }) {
   return (
-    <section className="relative border-t border-white/10 px-5 py-20">
-      <div className="mx-auto max-w-6xl">
+    <section className="relative overflow-hidden border-t border-white/10 px-5 py-20">
+      {/*
+        배경 — 나선을 그리며 퍼지는 입자. '한 곳에서 전국으로 뻗어 나가는 방송' 을 나타낸다.
+        섹션 강조색으로 물들이고, 콘텐츠 뒤에서 옅게만 돌린다.
+      */}
+      <SpiralAnimation
+        color={accent}
+        count={700}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-70"
+      />
+      {/* 입자 위로 살짝 덮어 본문 대비를 지킨다 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(ellipse at center, rgb(5 10 24 / 0.1) 0%, rgb(5 10 24 / 0.42) 58%, rgb(5 10 24 / 0.78) 100%)',
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl">
         <Reveal>
           <p className="mb-3 inline-flex items-center gap-2 rounded-pill px-4 py-1.5 text-sm font-black text-[#0b1220]" style={{ background: accent }}>
             <Sparkles size={14} /> NEW · 2027 신규 코너
