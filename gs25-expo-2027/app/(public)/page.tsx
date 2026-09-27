@@ -180,7 +180,7 @@ export default function LandingPage() {
           className="pointer-events-none absolute inset-0 z-10"
           style={{
             background:
-              'linear-gradient(to bottom, rgb(5 10 24 / 0.88) 0%, rgb(5 10 24 / 0.62) 34%, rgb(5 10 24 / 0.72) 66%, rgb(5 10 24 / 0.97) 100%)',
+              'linear-gradient(to bottom, rgb(5 10 24 / 0.93) 0%, rgb(5 10 24 / 0.78) 22%, rgb(5 10 24 / 0.50) 48%, rgb(5 10 24 / 0.76) 74%, rgb(5 10 24 / 0.97) 100%)',
           }}
         />
         <FilmOverlay letterbox grain vignette scanline accent={theme.accent} />
@@ -202,7 +202,7 @@ export default function LandingPage() {
         </header>
 
         {/* 타이틀 */}
-        <div className="absolute inset-x-0 top-1/2 z-30 -translate-y-[58%] px-5">
+        <div className="absolute inset-x-0 top-1/2 z-30 -translate-y-[52%] px-5">
           <div className="mx-auto max-w-5xl">
             <motion.p
               initial={{ opacity: 0, x: -14 }}

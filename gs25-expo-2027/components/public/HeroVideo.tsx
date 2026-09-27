@@ -72,15 +72,13 @@ export function HeroVideo({
       style={{ opacity: done ? 0 : 1 }}
     >
       {/*
-        배경 영상은 흐리게 깐다. 영상 안에 "GS25 PRODUCT SHOW 2027" 간판 글씨가 크게 박혀 있어
-        그대로 두면 히어로 제목과 겹쳐 둘 다 안 읽힌다(4.5px 로는 여전히 겹쳤고 7px 에서 해결됐다).
-        결과적으로 제목만 또렷한 피사계 심도 연출이 된다.
-        확대는 blur 가장자리에 생기는 빈 테두리를 가리기 위함.
+        선명하게 그대로 보여 준다. 간판 글씨와 제목이 겹치는 문제는
+        블러가 아니라 제목을 간판 아래로 내리고 스크림을 조절해 해결했다.
       */}
       <video
         ref={ref}
         className="h-full w-full object-cover"
-        style={{ filter: 'blur(7px) saturate(1.1) brightness(0.92)', transform: 'scale(1.12)' }}
+        style={{ filter: 'saturate(1.06) brightness(0.9)' }}
         poster="/media/hero-2027-poster.jpg"
         preload="metadata"
         muted
