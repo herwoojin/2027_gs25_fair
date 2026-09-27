@@ -25,9 +25,20 @@ function loadKakaoSdk(key: string): Promise<void> {
     // autoload=false → load() 를 직접 불러 초기화 시점을 통제한다.
     el.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false`;
     el.async = true;
-    el.onload = () => resolve();
+    el.onload = () => {
+      // 카카오맵 서비스가 꺼져 있거나 키가 잘못되면 403 JSON 본문이 내려온다.
+      // 그 본문은 공교롭게도 실행 가능한 JS 라 onerror 가 아닌 onload 가 불린다.
+      // 그래서 로드 성공 여부는 전역 객체로 직접 확인해야 한다.
+      const w2 = window as typeof window & { kakao?: { maps?: unknown } };
+      if (w2.kakao?.maps) resolve();
+      else reject(new Error('sdk-unavailable'));
+    };
     el.onerror = () => reject(new Error('sdk-load-failed'));
     document.head.appendChild(el);
+  });
+  // 실패를 캐시해 두면 설정을 고친 뒤에도 계속 실패한다. 다음 시도를 위해 비운다.
+  sdkPromise.catch(() => {
+    sdkPromise = null;
   });
   return sdkPromise;
 }
