@@ -1,7 +1,13 @@
 /** 점포 화이트리스트 시트 연동 회귀 */
 import crypto from 'node:crypto';
 const B='http://localhost:3000';
-const KEY='3c7c07d9f2d94d07af660209519fedb925c873d6ba484d629a77a2756248d862';
+// 공유키는 저장소에 두지 않는다. 실행할 때 환경변수로 넘긴다.
+//   APPS_SCRIPT_KEY=... node scripts/e2e/stores.mjs
+const KEY = process.env.APPS_SCRIPT_KEY;
+if (!KEY) {
+  console.error('APPS_SCRIPT_KEY 환경변수가 필요합니다. 예) APPS_SCRIPT_KEY=... node scripts/e2e/stores.mjs');
+  process.exit(2);
+}
 let pass=0,fail=0;
 const ok=(l,c,e='')=>{c?(pass++,console.log(`  ✅ ${l}${e?' — '+e:''}`)):(fail++,console.log(`  ❌ ${l}${e?' — '+e:''}`))};
 const fn=async(n,p={},t)=>{const h={'Content-Type':'application/json'};if(t)h['x-session-token']=t;
