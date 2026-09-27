@@ -13,23 +13,24 @@ import { CrowdCanvas } from '@/components/ui/crowd-canvas';
  */
 export function MentorBlock({ accent }: { accent: string }) {
   return (
-    <section className="relative overflow-hidden border-t border-white/10 px-5 pb-44 pt-20">
+    <section className="relative overflow-hidden border-t border-white/10 px-5 pb-20 pt-56">
       {/*
-        배경 — 섹션 아래쪽을 가로지르는 군중 띠.
-        콘텐츠 아래에 여백(pb-44)을 두고 그 자리에 깔아, 글과 겹쳐 읽기 어려워지는 것을 막는다.
+        배경 — 섹션 위쪽을 가로지르는 군중 띠.
+        인물이 캔버스 아래쪽에 서므로, 캔버스 높이(13rem)만큼 위 여백(pt-56)을 줘서
+        군중이 선 자리 아래에서 본문이 시작되게 한다. 글과 겹치지 않는다.
       */}
       <CrowdCanvas
         src="/media/crowd.png"
         count={22}
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[22rem] w-full opacity-60"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[13rem] w-full opacity-60"
       />
-      {/* 위쪽은 배경색으로 덮고 아래로 갈수록 군중이 드러나게 한다 */}
+      {/* 군중이 선 자리 아래로 배경색에 자연스럽게 잠기게 한다 */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[22rem]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[13rem]"
         style={{
           background:
-            'linear-gradient(to bottom, rgb(5 10 24) 0%, rgb(5 10 24 / 0.86) 26%, rgb(5 10 24 / 0.35) 62%, rgb(5 10 24 / 0.1) 100%)',
+            'linear-gradient(to bottom, rgb(5 10 24 / 0.12) 0%, rgb(5 10 24 / 0.28) 52%, rgb(5 10 24 / 0.86) 88%, rgb(5 10 24) 100%)',
         }}
       />
       <div className="relative mx-auto max-w-6xl">
