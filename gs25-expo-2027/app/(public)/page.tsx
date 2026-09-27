@@ -13,6 +13,7 @@ import { themeOf } from '@/lib/cityTheme';
 import { useViewMode } from '@/lib/gpuTier';
 import { Countdown } from '@/components/public/Countdown';
 import { HeroVideo } from '@/components/public/HeroVideo';
+import { GuideMap } from '@/components/public/GuideMap';
 import { PopupNews } from '@/components/common/PopupNews';
 import { BrandMark } from '@/components/common/AppShell';
 import { FilmOverlay } from '@/components/common/FilmOverlay';
@@ -413,6 +414,9 @@ export default function LandingPage() {
       {/* ═══ 9개 도시 ═══ */}
       <CityLine cities={cities} activeId={activeId} onHover={setActiveId} accent={theme.accent} />
 
+      {/* ═══ 가이드맵 — 어떤 전략이 나올지 미리 보여 현장 방문으로 잇는다 ═══ */}
+      <GuideMap accent={theme.accent} />
+
       {/* ═══ 기념품 티저 ═══ */}
       <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />
 
@@ -472,7 +476,7 @@ function CityLine({
   accent: string;
 }) {
   return (
-    <section className="relative px-5 py-20">
+    <section id="cities" className="relative scroll-mt-4 px-5 py-20">
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <p className="mb-2 text-sm font-bold tracking-widest" style={{ color: accent }}>

@@ -136,6 +136,11 @@
           "name": "히어로 배경 영상 (HeroVideo)",
           "purpose": "랜딩 히어로 배경. 3D 기기에서는 인트로로 1회 재생 후 시네마틱 투어로 전환, 그 외에는 반복 재생. 동작 줄이기·자동재생 차단 시 poster 정지화면.",
           "config": "components/public/HeroVideo.tsx · public/media/hero-2027.mp4 (1.6MB)"
+        },
+        {
+          "name": "가이드맵 (GuideMap)",
+          "purpose": "랜딩에서 전시장 평면도와 11개 존 동선을 미리 보여 준다. 좌표는 SECTIONS[].hallPosition 을 그대로 써서 3D 전시장과 배치가 항상 일치한다.",
+          "config": "components/public/GuideMap.tsx · 기념품 티저 바로 위 블록"
         }
       ]
     },
