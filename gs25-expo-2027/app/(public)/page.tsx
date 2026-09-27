@@ -21,11 +21,6 @@ import { CustomCursor } from '@/components/common/CustomCursor';
 import { Reveal, RevealText } from '@/components/common/Reveal';
 import { useToast } from '@/components/common/Toast';
 
-const CinematicTour = dynamic(
-  () => import('@/components/public/CinematicTour').then((m) => m.CinematicTour),
-  { ssr: false, loading: () => null },
-);
-
 interface City {
   id: string;
   city: string;
@@ -60,8 +55,6 @@ export default function LandingPage() {
   const [now, setNow] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string>('seoul');
   const [playing, setPlaying] = useState(true);
-  // 히어로 인트로 영상이 끝나면 3D 투어로 넘긴다.
-  const [introDone, setIntroDone] = useState(false);
 
   const progressRef = useRef(0);
   const barRef = useRef<HTMLDivElement>(null);
@@ -69,9 +62,8 @@ export default function LandingPage() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   // mode 는 useEffect 안에서 정해지므로 SSR·첫 렌더 모두 null → 정적 히어로.
-  // 동작 줄이기 설정은 useViewMode 내부에서 함께 판단한다.
-  const { mode, quality } = useViewMode(false);
-  const use3D = mode === '3d';
+  // 히어로 배경은 항상 전시회 영상이므로 3D 분기는 쓰지 않는다.
+  const { mode } = useViewMode(false);
 
   useEffect(() => {
     setNow(Date.now());
@@ -95,8 +87,11 @@ export default function LandingPage() {
     if (knobRef.current) knobRef.current.style.left = `${pct}%`;
   }, []);
 
+  // 도시 티커 진행 루프. 예전에는 3D 투어가 돌려 주었지만,
+  // 히어로 배경이 영상으로 바뀌면서 여기서 직접 돌린다.
   useEffect(() => {
-    if (!use3D || cities.length === 0) return;
+    const n = cities.length;
+    if (n === 0) return;
     let raf = 0;
     let last = performance.now();
     const tick = (t: number) => {
@@ -106,15 +101,16 @@ export default function LandingPage() {
         progressRef.current += dt / TOUR_SECONDS;
         if (progressRef.current >= 1) progressRef.current = 0; // 순환
         paint();
+        // 진행도에 해당하는 도시를 고른다 (3D 투어의 onCityChange 를 대신한다)
+        const idx = Math.min(n - 1, Math.round(progressRef.current * (n - 1)));
+        const id = cities[idx]?.id;
+        if (id) setActiveId((cur) => (cur === id ? cur : id));
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, use3D, cities.length, paint]);
-
-  // HeroVideo 의 effect 의존성이므로 참조가 안정적이어야 한다.
-  const onIntroEnd = useCallback(() => setIntroDone(true), []);
+  }, [playing, cities, paint]);
 
   const seekTo = useCallback(
     (ratio: number) => {
@@ -152,28 +148,11 @@ export default function LandingPage() {
 
       {/* ═══ 히어로: 시네마틱 투어 ═══ */}
       <section className="relative h-dvh min-h-[38rem] w-full overflow-hidden">
-        {/* 배경 — 실사 영상이 먼저 깔리고, 3D 기기에서는 투어가 이어받는다 */}
+        {/* 배경 — 전시회 영상을 계속 재생한다.
+            재생이 막히거나 '동작 줄이기' 설정이면 poster 와 아래 정적 배경이 남는다. */}
         <div className="absolute inset-0">
           <StaticHeroBackdrop accent={theme.accent} />
-          {use3D && cities.length > 0 && (
-            <div
-              className="absolute inset-0 transition-opacity duration-[1200ms] ease-out"
-              style={{ opacity: introDone ? 1 : 0 }}
-            >
-              <CinematicTour
-                cities={cities}
-                progressRef={progressRef}
-                onCityChange={setActiveId}
-                quality={quality}
-              />
-            </div>
-          )}
-          {mode !== null && (
-            <HeroVideo
-              mode={use3D && cities.length > 0 ? 'intro' : 'loop'}
-              onIntroEnd={onIntroEnd}
-            />
-          )}
+          {mode !== null && <HeroVideo mode="loop" />}
         </div>
 
         {/* 가독성 확보용 그라데이션 — 3D 위에 텍스트를 얹기 위해 필요 */}
@@ -327,8 +306,7 @@ export default function LandingPage() {
               <button
                 onClick={() => setPlaying((p) => !p)}
                 aria-label={playing ? '투어 일시정지' : '투어 재생'}
-                disabled={!use3D}
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 backdrop-blur transition hover:bg-white/10 disabled:opacity-35"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/25 backdrop-blur transition hover:bg-white/10"
               >
                 {playing ? <Pause size={17} /> : <Play size={17} />}
               </button>
