@@ -8,6 +8,12 @@ import {
   verifyPullRequest,
 } from '@/lib/server/mailQueue';
 import { staffDirectoryStatus, syncStaffDirectory } from '@/lib/server/staffDirectory';
+import {
+  claimEventWrites,
+  completeEventWrite,
+  eventDirectoryStatus,
+  syncEvents,
+} from '@/lib/server/eventDirectory';
 import { hydrateShared, flushShared } from '@/lib/server/sharedState';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +37,8 @@ export async function POST(req: NextRequest) {
     sig?: string;
     results?: unknown;
     staff?: unknown;
+    events?: unknown;
+    eventResults?: unknown;
   } = {};
   try {
     body = await req.json();
@@ -60,6 +68,10 @@ export async function POST(req: NextRequest) {
     // pull 모드에서는 서버가 Staff 시트를 직접 읽을 수 없다.
     // Apps Script 가 매번 원장을 함께 보내 주므로 여기서 캐시에 반영한다.
     const staffSync = syncStaffDirectory(body.staff);
+    // 시트가 보내 준 순회 일정을 반영한다.
+    const eventSync = syncEvents(body.events);
+    // 관리자가 화면에서 고친 내용은 트리거가 가져가 시트에 쓴다.
+    const eventWrites = claimEventWrites(20);
 
     const jobs = claimPending(20);
     await flushShared();
@@ -67,6 +79,8 @@ export async function POST(req: NextRequest) {
       {
         ok: true,
         staffSync,
+        eventSync,
+        eventWrites: eventWrites.map((w) => ({ id: w.id, eventId: w.eventId, patch: w.patch })),
         jobs: jobs.map((j) => ({
           id: j.id,
           email: j.email,
@@ -80,6 +94,9 @@ export async function POST(req: NextRequest) {
   }
 
   if (body.action === 'ack') {
+    const eventResults = (body.eventResults ?? []) as { id: string; ok: boolean; error?: string }[];
+    for (const r of eventResults) completeEventWrite(r.id, !!r.ok, r.error);
+
     const results = (body.results ?? []) as { id: string; ok: boolean; error?: string }[];
     let sent = 0;
     let failed = 0;
@@ -107,6 +124,7 @@ export async function POST(req: NextRequest) {
       pong: true,
       queue: queueStats(),
       staff: staffDirectoryStatus(),
+      events: eventDirectoryStatus(),
     });
   }
 

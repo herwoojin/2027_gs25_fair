@@ -28,6 +28,9 @@ const SHARED_KEYS = [
   'pullNonces',
   'staffDirectory',
   'staffSyncedAt',
+  'eventOverrides',
+  'eventWrites',
+  'eventsSyncedAt',
   'mailerLastPullAt',
   'rateLimits',
 ] as const;

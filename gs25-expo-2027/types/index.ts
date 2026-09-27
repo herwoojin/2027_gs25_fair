@@ -29,7 +29,13 @@ export const REGION_LABEL: Record<RegionCode, string> = REGIONS.reduce(
   {} as Record<RegionCode, string>,
 );
 
-export type Role = 'owner' | 'md' | 'operator' | 'admin';
+export type Role = 'owner' | 'md' | 'operator' | 'admin' | 'scheduler';
+
+/**
+ * 일정 관리자(scheduler) — ID/비밀번호로 들어오는 제한 권한.
+ * 일정·장소·주소·세부일정만 고칠 수 있고, 참가자 명단·쿠폰·화이트리스트에는 접근하지 못한다.
+ */
+export const SCHEDULER_ROLE: Role = 'scheduler';
 
 /** 🔒 stores/{storeCode} — 클라이언트 read 금지 */
 export interface Store {
@@ -278,6 +284,33 @@ export interface ExpoEvent {
   order: number;
   transit?: VenueTransit;
   parking?: VenueParking;
+  /** 타임별 운영 시간. 미지정이면 SLOT_TIMES 기본값을 쓴다. */
+  slotTimes?: string[];
+  /** 세부 일정 안내 한 줄 */
+  note?: string;
+  /** 구글시트에서 마지막으로 동기화된 시각 */
+  syncedAt?: number;
+}
+
+/** 구글시트 Events 탭에서 고칠 수 있는 항목 */
+export interface EventPatch {
+  venueName?: string;
+  address?: string;
+  startDate?: string;
+  endDate?: string;
+  slotTimes?: string[];
+  note?: string;
+}
+
+/** 관리자 수정분을 시트에 되돌려 쓰기 위한 작업 */
+export interface EventWriteJob {
+  id: string;
+  eventId: string;
+  patch: EventPatch;
+  createdAt: number;
+  claimedAt?: number;
+  status: 'pending' | 'claimed' | 'done' | 'failed';
+  error?: string;
 }
 
 export const SLOT_TIMES: Record<number, string> = {

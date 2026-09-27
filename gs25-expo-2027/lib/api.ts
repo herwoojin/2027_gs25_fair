@@ -41,7 +41,15 @@ function toError(status: number, body: { error?: { code?: string; message?: stri
  * - 없으면 개발 모드 API(/api/fn/*)
  * 어느 쪽이든 호출부 코드는 동일하다.
  */
-export async function callFn<T = unknown>(name: string, payload: unknown = {}): Promise<T> {
+/**
+ * @param authToken 이 세션 토큰으로만 호출한다(일정 관리자처럼 전역 세션과 분리된 경우).
+ *                  넘기지 않으면 평소처럼 전역 세션 토큰을 쓴다.
+ */
+export async function callFn<T = unknown>(
+  name: string,
+  payload: unknown = {},
+  authToken?: string,
+): Promise<T> {
   if (firebaseConfigured) {
     const fb = getFirebase()!;
     const { httpsCallable } = await import('firebase/functions');
@@ -61,7 +69,7 @@ export async function callFn<T = unknown>(name: string, payload: unknown = {}): 
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(getToken() ? { 'x-session-token': getToken()! } : {}),
+      ...(authToken ?? getToken() ? { 'x-session-token': (authToken ?? getToken())! } : {}),
     },
     body: JSON.stringify(payload ?? {}),
     cache: 'no-store',
@@ -77,7 +85,11 @@ export async function callFn<T = unknown>(name: string, payload: unknown = {}): 
   if (!res.ok) {
     const err = toError(res.status, body);
     // 동시접속·만료 시 토큰을 비우고 로그인으로 유도한다.
-    if (err.code === 'unauthenticated' || err.code === 'session-expired' || err.code === 'session-superseded') {
+    // 별도 토큰으로 부른 호출(일정 관리자 등)은 전역 세션을 건드리면 안 된다.
+    if (
+      !authToken &&
+      (err.code === 'unauthenticated' || err.code === 'session-expired' || err.code === 'session-superseded')
+    ) {
       setToken(null);
     }
     throw err;

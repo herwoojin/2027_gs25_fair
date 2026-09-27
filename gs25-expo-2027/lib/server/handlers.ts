@@ -6,7 +6,16 @@
  *  - 스탬프·완주·퀴즈 채점·SMS·AI 호출은 전부 여기(서버)에서만 한다.
  *  - 클라이언트가 보낸 시각은 절대 신뢰하지 않고 서버 시각만 쓴다.
  */
+import nodeCrypto from 'node:crypto';
 import { z } from 'zod';
+import {
+  claimEventWrites,
+  completeEventWrite,
+  eventDirectoryStatus,
+  mergedEvents,
+  normalizePatch,
+  queueEventWrite,
+} from './eventDirectory';
 import {
   sendSms,
   sendSmsBatch,
@@ -1129,7 +1138,8 @@ export async function getSuggestedQuestions(payload: unknown, ctx: Ctx) {
 // ── 오프라인 예약 (T7-1 ~ T7-3) ─────────────────────────────────────
 export async function getOfflineSchedule(_payload: unknown, _ctx: Ctx) {
   // 일정·장소는 공개 정보이므로 비로그인도 볼 수 있다(상품 정보 없음).
-  return { events: EVENTS, slots: allSlots() };
+  // 시트에서 고친 장소·주소·시간이 순회 일정 화면에도 그대로 반영된다.
+  return { events: mergedEvents(), slots: allSlots() };
 }
 
 const reserveSchema = z.object({
@@ -1374,13 +1384,16 @@ export async function getPublicHome(_payload: unknown, _ctx: Ctx) {
         (a, b) => b.priority - a.priority,
       )[0] ?? null,
     // 일정·장소·좌표는 공개 정보(상품 정보 아님 — PRD F-01 준수)
-    cities: EVENTS.map((e) => ({
+    // 구글시트 Events 탭에서 고친 내용이 여기에 그대로 반영된다.
+    cities: mergedEvents().map((e) => ({
       id: e.id,
       city: e.city,
       region: e.region,
       startDate: e.startDate,
       endDate: e.endDate,
       venueName: e.venueName,
+      address: e.address,
+      note: e.note,
       lat: e.lat,
       lng: e.lng,
       order: e.order,
@@ -1660,6 +1673,105 @@ export async function adminSmsTest(payload: unknown, ctx: Ctx) {
   return { ...res, mode: smsMode() };
 }
 
+// ── 일정 관리자 (ID/비밀번호) ─────────────────────────────────────
+/**
+ * ⚠️ 본부 로그인(회사 메일 인증)보다 훨씬 약한 문이다.
+ * 그래서 권한을 **일정·장소·주소·세부일정 편집으로만** 한정한다.
+ * 참가자 명단·쿠폰 발송·화이트리스트·감사 로그에는 접근하지 못한다.
+ * 비밀번호는 ADMIN_PASSWORD 환경변수로 덮어쓸 수 있다.
+ */
+const SCHEDULER_ID = (process.env.ADMIN_ID ?? 'admin').trim();
+const SCHEDULER_PW = (process.env.ADMIN_PASSWORD ?? '2525').trim();
+
+function timingSafeEq(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return nodeCrypto.timingSafeEqual(ba, bb);
+}
+
+const schedulerLoginSchema = z.object({
+  id: z.string().trim().min(1).max(40),
+  password: z.string().min(1).max(100),
+});
+
+export async function schedulerLogin(payload: unknown, ctx: Ctx) {
+  const { id, password } = schedulerLoginSchema.parse(payload);
+
+  // 짧은 비밀번호라 무차별 대입 방어가 특히 중요하다. IP 10분 5회.
+  const rate = checkRate(`scheduler:${ctx.ip}`, 5, 10 * 60000);
+  if (!rate.ok) {
+    audit({ uid: 'scheduler', role: 'system', action: 'scheduler.rate_limited', ip: ctx.ip });
+    throw new HttpError(429, `요청이 많습니다. ${rate.retryAfterSec}초 후 다시 시도해 주세요.`, 'rate-limited');
+  }
+
+  const ok = timingSafeEq(id, SCHEDULER_ID) && timingSafeEq(password, SCHEDULER_PW);
+  if (!ok) {
+    audit({ uid: 'scheduler', role: 'system', action: 'scheduler.login_failed', ip: ctx.ip, ua: ctx.ua });
+    throw new HttpError(400, SAME_ERROR, 'invalid-credentials');
+  }
+
+  const sess = issueSession({
+    uid: 'scheduler',
+    role: 'scheduler',
+    displayName: '일정 관리자',
+  });
+  audit({ uid: 'scheduler', role: 'scheduler', action: 'scheduler.login', ip: ctx.ip, ua: ctx.ua });
+  return {
+    token: sess.token,
+    expiresAt: sess.expiresAt,
+    user: { uid: 'scheduler', role: 'scheduler' as const, displayName: '일정 관리자' },
+  };
+}
+
+/** 일정 관리자 또는 본부 관리자만 통과 */
+function requireScheduler(ctx: Ctx) {
+  return requireStaff(readSession(ctx.token), ['scheduler', 'admin']);
+}
+
+export async function schedulerEvents(_payload: unknown, ctx: Ctx) {
+  requireScheduler(ctx);
+  return { events: mergedEvents(), status: eventDirectoryStatus() };
+}
+
+const schedulerSaveSchema = z.object({
+  eventId: z.string().trim().min(1).max(40),
+  venueName: z.string().trim().max(80).optional(),
+  address: z.string().trim().max(160).optional(),
+  startDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  endDate: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  slotTimes: z.array(z.string().trim().max(40)).max(3).optional(),
+  note: z.string().trim().max(200).optional(),
+});
+
+export async function schedulerSaveEvent(payload: unknown, ctx: Ctx) {
+  const caller = requireScheduler(ctx);
+  const { eventId, ...rest } = schedulerSaveSchema.parse(payload);
+
+  if (!mergedEvents().some((e) => e.id === eventId)) {
+    throw new HttpError(400, '알 수 없는 도시입니다.', 'unknown-event');
+  }
+  const patch = normalizePatch(rest);
+  if (Object.keys(patch).length === 0) {
+    throw new HttpError(400, '변경할 내용이 없습니다.', 'empty-patch');
+  }
+  if (patch.startDate && patch.endDate && patch.startDate > patch.endDate) {
+    throw new HttpError(400, '시작일이 종료일보다 늦습니다.', 'bad-range');
+  }
+
+  const job = queueEventWrite(eventId, patch);
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: 'scheduler.event_saved',
+    target: eventId,
+    ip: ctx.ip,
+    detail: Object.keys(patch).join(','),
+  });
+  // 화면은 바로 바뀌고, 구글시트는 다음 트리거(최대 1분)에 따라온다.
+  return { ok: true, jobId: job.id, events: mergedEvents(), status: eventDirectoryStatus() };
+}
+
 export async function adminAudit(payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
   const { limit } = z.object({ limit: z.number().int().min(1).max(500).default(100) }).parse(payload ?? {});
@@ -1677,7 +1789,7 @@ export async function adminReservations(payload: unknown, ctx: Ctx) {
       storeName: db.stores[r.storeCode]?.storeName ?? r.storeCode,
       city: EVENT_BY_ID[r.eventId]?.city ?? r.eventId,
     }));
-  return { reservations: rows, slots: allSlots(), events: EVENTS };
+  return { reservations: rows, slots: allSlots(), events: mergedEvents() };
 }
 
 export async function adminSetConfig(payload: unknown, ctx: Ctx) {
@@ -1826,6 +1938,9 @@ export const HANDLERS = {
   adminWhitelistSync,
   adminSmsStatus,
   adminSmsTest,
+  schedulerLogin,
+  schedulerEvents,
+  schedulerSaveEvent,
 } as const;
 
 export type HandlerName = keyof typeof HANDLERS;

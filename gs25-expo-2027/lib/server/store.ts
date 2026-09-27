@@ -19,6 +19,8 @@ import type {
   Reservation,
   Slot,
   Survey,
+  EventPatch,
+  EventWriteJob,
 } from '@/types';
 import { SLOTS } from '@/lib/seed/events';
 import { CHEERS, DEMO_STORES, QUESTIONS } from '@/lib/seed/misc';
@@ -99,6 +101,9 @@ interface DB {
   stores: Record<string, StoreRecord>;
   users: Record<string, AppUser>;
   /** ERD 의 staff/{uid} 대응 — 로그인 시 Staff 시트에서 가져와 채운다. */
+  eventOverrides: Record<string, EventPatch>;
+  eventWrites: EventWriteJob[];
+  eventsSyncedAt?: number;
   staffDirectory: Record<
     string,
     {
@@ -247,6 +252,8 @@ function seedDb(): DB {
     rateLimits: {},
     auditLogs: [],
     smsLogs: [],
+    eventOverrides: {},
+    eventWrites: [],
     chatLogs: {},
     aiUsage: {},
     liveSubs: {},

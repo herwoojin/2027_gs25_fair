@@ -40,9 +40,12 @@ var SHEET_ID = '1FhWFERnQyGk1gGIXW12iR1nw8uf9eEHcIV5zsVVKbVw';
 var ALLOWED_DOMAIN = 'gsretail.com';
 
 var STAFF_SHEET = 'Staff';
+var EVENT_SHEET = 'Events';
 var LOG_SHEET = 'MailLogs';
 
 var STAFF_HEADERS = ['email', 'name', 'team', 'role', 'sectionIds', 'backupFor', 'active'];
+/** 순회 일정 — 플랫폼과 양방향으로 맞춘다. id 는 고정, 나머지는 수정 가능 */
+var EVENT_HEADERS = ['id', 'city', 'venueName', 'address', 'startDate', 'endDate', 'slotTimes', 'note'];
 var LOG_HEADERS = ['at', 'emailMasked', 'purpose', 'status', 'detail', 'callerIp'];
 
 /** 동일 이메일 10분 5회 — 스크립트 자체 방어선 (플랫폼에도 별도 제한이 있다) */
@@ -202,6 +205,95 @@ function listStaff_() {
         active: isTrue_(r.active),
       };
     });
+}
+
+/** Events 탭 → 플랫폼으로 보낼 배열 */
+function listEvents_() {
+  var rows = readSheet_(EVENT_SHEET, EVENT_HEADERS);
+  return rows
+    .filter(function (r) {
+      return String(r.id || '').trim() !== '';
+    })
+    .map(function (r) {
+      return {
+        id: String(r.id).trim(),
+        city: r.city,
+        venueName: r.venueName,
+        address: r.address,
+        startDate: ymd_(r.startDate),
+        endDate: ymd_(r.endDate),
+        slotTimes: splitList_(r.slotTimes),
+        note: r.note,
+      };
+    });
+}
+
+/** 날짜 칸이 Date 로 들어와도 YYYY-MM-DD 로 맞춘다 */
+function ymd_(v) {
+  if (v instanceof Date) {
+    return Utilities.formatDate(v, 'Asia/Seoul', 'yyyy-MM-dd');
+  }
+  return String(v == null ? '' : v).trim();
+}
+
+/**
+ * 플랫폼에서 고친 일정을 Events 탭에 되돌려 쓴다.
+ * 빈 값은 '변경 없음' 으로 보고 건드리지 않는다.
+ */
+function applyEventWrites_(writes) {
+  var results = [];
+  if (!writes || writes.length === 0) return results;
+
+  var sh = ss_().getSheetByName(EVENT_SHEET);
+  if (!sh) {
+    for (var i = 0; i < writes.length; i++) {
+      results.push({ id: writes[i].id, ok: false, error: 'Events 시트가 없습니다' });
+    }
+    return results;
+  }
+
+  var values = sh.getDataRange().getValues();
+  var head = values[0].map(function (h) {
+    return String(h).trim();
+  });
+  var idCol = head.indexOf('id');
+  if (idCol < 0) {
+    for (var j = 0; j < writes.length; j++) {
+      results.push({ id: writes[j].id, ok: false, error: 'id 열이 없습니다' });
+    }
+    return results;
+  }
+
+  for (var w = 0; w < writes.length; w++) {
+    var job = writes[w];
+    try {
+      var rowIdx = -1;
+      for (var r = 1; r < values.length; r++) {
+        if (String(values[r][idCol]).trim() === String(job.eventId).trim()) {
+          rowIdx = r;
+          break;
+        }
+      }
+      if (rowIdx < 0) throw new Error('도시 ' + job.eventId + ' 행을 찾지 못했습니다');
+
+      var patch = job.patch || {};
+      for (var key in patch) {
+        if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
+        var col = head.indexOf(key);
+        if (col < 0) continue;
+        var val = patch[key];
+        if (val === null || val === undefined || val === '') continue;
+        if (Object.prototype.toString.call(val) === '[object Array]') val = val.join(' | ');
+        // 날짜가 날짜서식으로 바뀌지 않도록 문자열로 넣는다
+        sh.getRange(rowIdx + 1, col + 1).setValue(String(val));
+      }
+      results.push({ id: job.id, ok: true });
+    } catch (err) {
+      results.push({ id: job.id, ok: false, error: String(err) });
+    }
+  }
+  SpreadsheetApp.flush();
+  return results;
 }
 
 function findStaff_(email) {
@@ -411,6 +503,28 @@ function setup() {
     staff.getRange(1, 1, 1, STAFF_HEADERS.length).setFontWeight('bold');
   }
 
+  var ev = ss.getSheetByName(EVENT_SHEET);
+  if (!ev) {
+    ev = ss.insertSheet(EVENT_SHEET);
+    ev.appendRow(EVENT_HEADERS);
+    // id 는 플랫폼과 맞춰야 하므로 고치지 않는다. 나머지 칸을 고치면 사이트에 반영된다.
+    var seed = [
+      ['seoul', '서울', 'GS타워 아모리스홀', '서울 강남구 논현로 508', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['gyeonggi', '경기·인천', '수원컨벤션센터 3전시장', '경기 수원시 영통구 광교중앙로 140', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['gangwon', '강원', '춘천 세종호텔 컨벤션홀', '강원 춘천시 봉의산길 31', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['chungcheong', '대전·충청', '대전컨벤션센터 제2전시장', '대전 유성구 엑스포로 107', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['daegu', '대구·경북', '엑스코 동관 1홀', '대구 북구 엑스코로 10', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['ulsan', '울산', '울산전시컨벤션센터 2홀', '울산 남구 삼산중로 200', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['busan', '부산·경남', 'BEXCO 제2전시장 4홀', '부산 해운대구 APEC로 55', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['gwangju', '광주·전라', '김대중컨벤션센터 다목적홀', '광주 서구 상무누리로 30', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+      ['jeju', '제주', '제주국제컨벤션센터 한라홀', '제주 서귀포시 중문관광로 224', '', '', '10:00 – 12:00 | 13:00 – 15:00 | 15:00 – 17:00', ''],
+    ];
+    for (var i = 0; i < seed.length; i++) ev.appendRow(seed[i]);
+    ev.setFrozenRows(1);
+    ev.getRange(1, 1, 1, EVENT_HEADERS.length).setFontWeight('bold');
+    ev.getRange(1, 1, ev.getLastRow(), EVENT_HEADERS.length).setNumberFormat('@'); // 날짜 자동서식 방지
+  }
+
   var logs = ss.getSheetByName(LOG_SHEET);
   if (!logs) {
     logs = ss.insertSheet(LOG_SHEET);
@@ -432,6 +546,7 @@ function setup() {
   Logger.log(key);
   Logger.log('허용 도메인: @' + ALLOWED_DOMAIN);
   Logger.log('등록된 본부 계정: ' + listStaff_().length + '개');
+  Logger.log('등록된 순회 일정: ' + listEvents_().length + '개');
   Logger.log('오늘 남은 메일 발송 한도: ' + MailApp.getRemainingDailyQuota());
   Logger.log('───────────────────────────────────────────────');
   return key;
@@ -560,13 +675,30 @@ function pullAndSend() {
     // 본부 계정 원장을 함께 보낸다.
     // pull 모드에서는 플랫폼이 이 시트를 직접 읽을 수 없으므로,
     // 트리거가 올 때마다 최신 목록을 실어 보내 로그인 판정에 쓰게 한다.
-    pulled = callPlatform_('pull', { staff: listStaff_() });
+    pulled = callPlatform_('pull', { staff: listStaff_(), events: listEvents_() });
   } catch (err) {
     log_('', 'PULL', 'error', String(err), '');
     return;
   }
+  // 플랫폼에서 고친 일정을 시트에 반영한다 (메일이 없어도 해야 한다)
+  var eventResults = [];
+  try {
+    eventResults = applyEventWrites_((pulled && pulled.eventWrites) || []);
+  } catch (err) {
+    log_('', 'EVENT_WRITE', 'error', String(err), '');
+  }
+
   var jobs = (pulled && pulled.jobs) || [];
-  if (jobs.length === 0) return;
+  if (jobs.length === 0) {
+    if (eventResults.length > 0) {
+      try {
+        callPlatform_('ack', { results: [], eventResults: eventResults });
+      } catch (err2) {
+        log_('', 'ACK', 'error', String(err2), '');
+      }
+    }
+    return;
+  }
 
   var results = [];
   for (var i = 0; i < jobs.length; i++) {
@@ -599,7 +731,7 @@ function pullAndSend() {
   }
 
   try {
-    callPlatform_('ack', { results: results });
+    callPlatform_('ack', { results: results, eventResults: eventResults });
   } catch (err) {
     log_('', 'ACK', 'error', String(err), '');
   }

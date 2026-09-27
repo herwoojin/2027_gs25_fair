@@ -229,6 +229,11 @@
           "version": "—",
           "purpose": "본부 계정 화이트리스트(email·role·sectionIds·backupFor·active). 여기에 없는 주소는 인증번호를 받지 못한다",
           "config": "Google Sheets `Staff` 탭 · functions/src/sync (importStaff)"
+        },
+        {
+          "name": "일정 관리자 로그인 (scheduler)",
+          "purpose": "ID/비밀번호로 들어와 순회 일정·장소·주소·시간만 수정한다. 본부 로그인보다 약한 문이라 권한을 좁게 묶었다 — 참가자 명단·쿠폰·화이트리스트·감사 로그 접근 불가. IP 10분 5회 제한 + 상수시간 비교 + 감사 로그.",
+          "config": "lib/server/handlers.ts · /admin-schedule · ADMIN_ID / ADMIN_PASSWORD 환경변수로 덮어쓰기"
         }
       ]
     },
@@ -264,6 +269,11 @@
           "version": "11.1.1",
           "purpose": "서버리스 인스턴스 간 공유 상태. 인증번호 세션·메일 대기열·본부 계정 원장·세션 토큰을 담아, 요청마다 컨테이너가 바뀌어도 로그인과 메일 발송이 이어지게 한다.",
           "config": "lib/server/sharedState.ts · 넷리파이 런타임에서만 활성(로컬은 자동으로 메모리 폴백)"
+        },
+        {
+          "name": "순회 일정 원장 (Events 시트 양방향)",
+          "purpose": "구글시트 Events 탭과 일정을 양방향으로 맞춘다. 시트→사이트는 트리거가 pull 할 때 실어 보내고, 사이트→시트는 큐에 쌓아 다음 pull 때 트리거가 기록한다. 화면은 저장 즉시 반영된다.",
+          "config": "lib/server/eventDirectory.ts · apps-script/Code.gs (listEvents_ / applyEventWrites_)"
         }
       ]
     },
