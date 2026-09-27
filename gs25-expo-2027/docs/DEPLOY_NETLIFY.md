@@ -306,7 +306,25 @@ Netlify 의 Next.js 런타임은 **서버리스 함수**라서 요청마다 다�
 | `storeName` | 점포명 | |
 | `ownerName` | 경영주명 | |
 | `phone` | 휴대폰 번호 | 로그인 2단계(뒷4자리) + 인증번호 수신 |
-| `region` | 지역코드 | SEOUL / GYEONGGI / GANGWON / CHUNGCHEONG / DAEGU / ULSAN / BUSAN / GWANGJU / JEJU |
+| `region` | 지역 | 영문 코드 또는 **한글 지역명**. 도시명은 받지 않습니다 |
+
+**`region` 에 넣을 수 있는 값**
+
+| 코드 | 한글로 써도 됨 |
+|---|---|
+| `SEOUL` | 서울 |
+| `GYEONGGI` | 경기 · 인천 · 경기·인천 |
+| `GANGWON` | 강원 |
+| `CHUNGCHEONG` | 대전 · 충청 · 충남 · 충북 · 세종 |
+| `DAEGU` | 대구 · 경북 |
+| `ULSAN` | 울산 |
+| `BUSAN` | 부산 · 경남 |
+| `GWANGJU` | 광주 · 전라 · 전남 · 전북 |
+| `JEJU` | 제주 |
+
+> `일산` · `수원` 같은 **도시명은 받지 않습니다.** 어느 권역인지 추측하면 틀릴 수 있고,
+> 틀린 채로 넘어가면 그 점포가 엉뚱한 지역 랭킹에 잡힙니다. 그 행만 건너뛰고
+> 관리자 → 화이트리스트 화면에 이유를 표시합니다.
 | `fcTeam` | FC팀 | 선택 |
 | `active` | 활성 여부 | **비우면 활성**, 막으려면 `FALSE` |
 

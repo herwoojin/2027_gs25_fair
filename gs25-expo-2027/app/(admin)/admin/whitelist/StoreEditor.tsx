@@ -14,6 +14,13 @@ import { callFn, type ApiError } from '@/lib/api';
  * 전화번호는 평문으로 내려오지 않는다(마스킹만). 번호를 바꿀 때만 새로 입력한다.
  */
 
+interface SyncStatus {
+  total: number;
+  active: number;
+  syncedAgoSec: number | null;
+  lastSync: { upserted: number; deactivated: number; skipped: number; reasons: string[] } | null;
+}
+
 interface Row {
   storeCode: string;
   storeName: string;
@@ -54,10 +61,14 @@ export function StoreEditor() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [sync, setSync] = useState<SyncStatus | null>(null);
   const pageSize = 50;
 
   const load = useCallback(async (query: string, p: number) => {
     try {
+      callFn<{ status: SyncStatus }>('adminWhitelistSync')
+        .then((x) => setSync(x.status))
+        .catch(() => setSync(null));
       const r = await callFn<{ rows: Row[]; total: number }>('adminStoreList', {
         q: query,
         page: p,
@@ -197,6 +208,31 @@ export function StoreEditor() {
           >
             {busy ? <Loader2 size={15} className="animate-spin" /> : null} 저장
           </button>
+        </div>
+      )}
+
+      {sync && (
+        <div className="gs-card p-4 text-sm">
+          <p className="text-gs-muted">
+            구글시트 동기화{' '}
+            {sync.syncedAgoSec === null ? (
+              <b className="text-gs-ink">아직 없음</b>
+            ) : (
+              <b className="text-gs-ink">{sync.syncedAgoSec}초 전</b>
+            )}{' '}
+            · 활성 <b className="text-gs-ink">{sync.active.toLocaleString('ko-KR')}</b> / 전체{' '}
+            {sync.total.toLocaleString('ko-KR')}
+          </p>
+          {sync.lastSync && sync.lastSync.skipped > 0 && (
+            <div className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+              <b>시트에서 {sync.lastSync.skipped}행을 건너뛰었습니다.</b>
+              <ul className="mt-1 space-y-0.5">
+                {sync.lastSync.reasons.map((r) => (
+                  <li key={r}>· {r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

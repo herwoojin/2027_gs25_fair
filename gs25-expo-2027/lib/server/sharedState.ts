@@ -33,6 +33,7 @@ const SHARED_KEYS = [
   'eventsSyncedAt',
   'stores',
   'storesSyncedAt',
+  'storesLastSync',
   'liveStreams',
   'liveSeeded',
   'sectionOverrides',

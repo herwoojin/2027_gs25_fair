@@ -111,6 +111,13 @@ interface DB {
   eventWrites: EventWriteJob[];
   eventsSyncedAt?: number;
   storesSyncedAt?: number;
+  storesLastSync?: {
+    at: number;
+    upserted: number;
+    deactivated: number;
+    skipped: number;
+    reasons: string[];
+  };
   liveStreams: LiveStream[];
   /** 콘텐츠 원장 — 시드 위에 덮어쓰는 층 */
   sectionOverrides: Record<string, Partial<Section>>;

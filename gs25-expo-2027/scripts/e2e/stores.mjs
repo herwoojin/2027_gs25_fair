@@ -44,6 +44,20 @@ ok('뒷4자리 틀리면 거부', (await fn('requestOtp',{storeCode:'31001',last
 ok('미등록 점포코드는 거부', (await fn('requestOtp',{storeCode:'99999',last4:'1234'})).status===400);
 ok('번호 오류로 건너뛴 점포는 미등록', (await fn('requestOtp',{storeCode:'31003',last4:'0123'})).status===400);
 
+console.log('\n── 사용자가 실제로 넣은 시트 형태 ──');
+const real=await mq('stores',{stores:[
+  {storeCode:'00001',storeName:'테스트점',ownerName:'허우진',phone:'01085986106',region:'일산',fcTeam:'테스트1팀',active:''},
+  {storeCode:'00002',storeName:'일산점',ownerName:'허우진',phone:'01085986106',region:'경기',fcTeam:'테스트1팀',active:''},
+  {storeCode:'20001',storeName:'강남역점',ownerName:'김경영',phone:'1012341001',region:'SEOUL',fcTeam:'서울1팀',active:'TRUE'},
+]});
+ok('도시명(일산)은 건너뛰고 이유를 알려 준다', real.skipped===1 && /일산/.test(real.reasons.join('')), real.reasons[0]?.slice(0,50));
+ok('한글 지역명(경기)은 받아 준다', real.upserted===2);
+ok('active 빈 칸도 등록됨', (await fn('requestOtp',{storeCode:'00002',last4:'6106'})).status===200);
+ok('앞의 0 이 빠진 번호도 복원해 로그인된다',
+   (await fn('requestOtp',{storeCode:'20001',last4:'1001'})).status===200);
+const sv=(await fn('adminStoreLookup',{storeCode:'00002'},T)).result.found;
+ok('지역이 코드로 저장됨', sv.region==='GYEONGGI', sv.region);
+
 console.log('\n── 비활성 처리 ──');
 await mq('stores',{stores:[{storeCode:'31001',storeName:'광교점',ownerName:'박경영',phone:'01055667788',region:'GYEONGGI',active:'FALSE'}]});
 ok('FALSE 로 두면 로그인 차단', (await fn('requestOtp',{storeCode:'31001',last4:'7788'})).status===400);

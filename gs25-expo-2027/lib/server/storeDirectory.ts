@@ -26,6 +26,51 @@ if (typeof window !== 'undefined') {
 
 const VALID_REGIONS = new Set(REGIONS.map((r) => r.code));
 
+/**
+ * 지역 칸을 코드로 맞춘다.
+ *
+ * 시트에 영문 코드를 정확히 적는 건 쉽게 틀린다. 한글 지역명도 받아 준다.
+ * 다만 '일산' 같은 **도시명은 받지 않는다** — 어느 권역인지 추측하면 틀릴 수 있고,
+ * 틀린 채로 넘어가면 그 점포는 엉뚱한 지역 랭킹에 잡힌다. 차라리 건너뛰고 알려 주는 편이 낫다.
+ */
+const REGION_ALIAS: Record<string, RegionCode> = {
+  서울: 'SEOUL',
+  경기: 'GYEONGGI',
+  인천: 'GYEONGGI',
+  '경기·인천': 'GYEONGGI',
+  '경기인천': 'GYEONGGI',
+  강원: 'GANGWON',
+  대전: 'CHUNGCHEONG',
+  충청: 'CHUNGCHEONG',
+  충남: 'CHUNGCHEONG',
+  충북: 'CHUNGCHEONG',
+  세종: 'CHUNGCHEONG',
+  '대전·충청': 'CHUNGCHEONG',
+  대구: 'DAEGU',
+  경북: 'DAEGU',
+  '대구·경북': 'DAEGU',
+  울산: 'ULSAN',
+  부산: 'BUSAN',
+  경남: 'BUSAN',
+  '부산·경남': 'BUSAN',
+  광주: 'GWANGJU',
+  전라: 'GWANGJU',
+  전남: 'GWANGJU',
+  전북: 'GWANGJU',
+  '광주·전라': 'GWANGJU',
+  제주: 'JEJU',
+};
+
+function toRegion(raw: string): RegionCode | null {
+  const v = raw.trim();
+  const upper = v.toUpperCase() as RegionCode;
+  if (VALID_REGIONS.has(upper)) return upper;
+  return REGION_ALIAS[v.replace(/\s+/g, '')] ?? null;
+}
+
+/** 시트 안내에 쓸 유효값 목록 */
+const REGION_HINT = REGIONS.map((r) => `${r.code}(${r.label})`).join(', ');
+
 function str(v: unknown, max = 60): string {
   return String(v ?? '').trim().slice(0, max);
 }
@@ -38,7 +83,10 @@ function isInactive(v: unknown): boolean {
 }
 
 function normalizePhone(v: unknown): string | null {
-  const d = String(v ?? '').replace(/[^0-9]/g, '');
+  let d = String(v ?? '').replace(/[^0-9]/g, '');
+  // 시트 칸이 숫자 서식이면 앞의 0 이 날아간다 (01012341001 → 1012341001).
+  // 앱스크립트에서도 되살리지만, 다른 경로로 들어올 수 있으니 여기서도 받아 준다.
+  if (/^1[016-9]\d{7,8}$/.test(d)) d = `0${d}`;
   return /^01[016-9]\d{7,8}$/.test(d) ? d : null;
 }
 
@@ -77,10 +125,14 @@ export function syncStores(rows: unknown): StoreSyncResult {
       continue;
     }
 
-    const region = str(r.region, 20).toUpperCase() as RegionCode;
-    if (!VALID_REGIONS.has(region)) {
+    const region = toRegion(str(r.region, 20));
+    if (!region) {
       out.skipped += 1;
-      if (out.reasons.length < 10) out.reasons.push(`${storeCode}: 지역코드 '${region}' 없음`);
+      if (out.reasons.length < 10) {
+        out.reasons.push(
+          `${storeCode}: 지역 '${str(r.region, 20)}' 을(를) 알 수 없습니다. 가능한 값 — ${REGION_HINT}`,
+        );
+      }
       continue;
     }
 
@@ -107,6 +159,8 @@ export function syncStores(rows: unknown): StoreSyncResult {
   }
 
   db.storesSyncedAt = Date.now();
+  // 건너뛴 이유를 남겨 둔다. 관리자가 시트를 고칠 수 있어야 한다.
+  db.storesLastSync = { at: Date.now(), ...out };
   persist();
   return out;
 }
@@ -131,6 +185,7 @@ export function storeDirectoryStatus() {
     syncedAt: db.storesSyncedAt ?? null,
     syncedAgoSec: db.storesSyncedAt ? Math.round((Date.now() - db.storesSyncedAt) / 1000) : null,
     hash: storesHash(),
+    lastSync: db.storesLastSync ?? null,
   };
 }
 
