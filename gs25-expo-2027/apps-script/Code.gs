@@ -130,7 +130,9 @@ function sendOtp_(p) {
   var minutes = Math.max(1, Math.round(expiresInSec / 60));
   MailApp.sendEmail({
     to: email,
-    subject: '[GS25 상품전략공유회] 본부 로그인 인증번호 ' + code,
+    // 인증번호를 제목에 넣지 않는다. 알림 미리보기·잠금화면에 그대로 뜨고,
+    // 수신 주소가 없어 반송되면 반송 알림이 원본 제목을 인용해 발신자에게 되돌려준다.
+    subject: '[GS25 상품전략공유회] 본부 로그인 인증번호',
     htmlBody: buildHtml_(staff.name || email, code, minutes),
     body: buildText_(staff.name || email, code, minutes),
     name: 'GS25 상품전략공유회',
@@ -554,6 +556,9 @@ function setup() {
   Logger.log(key);
   Logger.log('허용 도메인: @' + ALLOWED_DOMAIN);
   Logger.log('등록된 본부 계정: ' + listStaff_().length + '개');
+  Logger.log('⚠️ Staff 탭의 admin@ / fresh.md@ / op1@ 는 예시 주소입니다.');
+  Logger.log('   실제로 존재하지 않는 주소라 메일이 반송되고, 반송 알림이 발신 계정으로 돌아옵니다.');
+  Logger.log('   실제 담당자 주소로 바꾸고 예시 행은 지우세요.');
   Logger.log('등록된 순회 일정: ' + listEvents_().length + '개');
   Logger.log('오늘 남은 메일 발송 한도: ' + MailApp.getRemainingDailyQuota());
   Logger.log('───────────────────────────────────────────────');
@@ -723,7 +728,8 @@ function pullAndSend() {
       var minutes = Math.max(1, Math.round(Number(j.expiresInSec || 600) / 60));
       MailApp.sendEmail({
         to: email,
-        subject: '[GS25 상품전략공유회] 본부 로그인 인증번호 ' + j.code,
+        // 인증번호는 본문에만 둔다 (제목에 넣으면 반송 알림으로 되돌아온다)
+        subject: '[GS25 상품전략공유회] 본부 로그인 인증번호',
         htmlBody: buildHtml_(staff.name || email, j.code, minutes),
         body: buildText_(staff.name || email, j.code, minutes),
         name: 'GS25 상품전략공유회',
