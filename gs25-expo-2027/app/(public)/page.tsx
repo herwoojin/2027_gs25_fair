@@ -400,11 +400,11 @@ export default function LandingPage() {
       {/* ═══ 신규 코너 — 지역별 상품전략도우미 (히어로 아래 세 번째) ═══ */}
       <StrategyHelperBlock accent={theme.accent} />
 
-      {/* ═══ 기념품 티저 ═══ */}
-      <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />
-
       {/* ═══ 지역 멘토 경영주 ═══ */}
       <MentorBlock accent={theme.accent} />
+
+      {/* ═══ 기념품 티저 — 사전 알림 바로 위 ═══ */}
+      <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />
 
       {/* ═══ 사전 알림 ═══ */}
       <PreNotifyForm accent={theme.accent} />
