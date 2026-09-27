@@ -41,11 +41,14 @@ var ALLOWED_DOMAIN = 'gsretail.com';
 
 var STAFF_SHEET = 'Staff';
 var EVENT_SHEET = 'Events';
+var STORE_SHEET = 'Stores';
 var LOG_SHEET = 'MailLogs';
 
 var STAFF_HEADERS = ['email', 'name', 'team', 'role', 'sectionIds', 'backupFor', 'active'];
 /** 순회 일정 — 플랫폼과 양방향으로 맞춘다. id 는 고정, 나머지는 수정 가능 */
 var EVENT_HEADERS = ['id', 'city', 'venueName', 'address', 'startDate', 'endDate', 'slotTimes', 'note'];
+/** 점포 화이트리스트 — 여기에 등록된 점포코드만 경영주 로그인이 된다 */
+var STORE_HEADERS = ['storeCode', 'storeName', 'ownerName', 'phone', 'region', 'fcTeam', 'active'];
 var LOG_HEADERS = ['at', 'emailMasked', 'purpose', 'status', 'detail', 'callerIp'];
 
 /** 동일 이메일 10분 5회 — 스크립트 자체 방어선 (플랫폼에도 별도 제한이 있다) */
@@ -309,6 +312,64 @@ function applyEventWrites_(writes) {
   return results;
 }
 
+/** Stores 탭 → 플랫폼으로 보낼 배열 */
+function listStores_() {
+  var rows = readSheet_(STORE_SHEET, STORE_HEADERS);
+  return rows
+    .filter(function (r) {
+      return String(r.storeCode || '').trim() !== '';
+    })
+    .map(function (r) {
+      return {
+        storeCode: String(r.storeCode).trim(),
+        storeName: r.storeName,
+        ownerName: r.ownerName,
+        // 숫자로 들어오면 앞의 0 이 날아가므로 반드시 문자열로 되살린다
+        phone: normalizePhoneCell_(r.phone),
+        region: String(r.region || '').trim().toUpperCase(),
+        fcTeam: r.fcTeam,
+        active: r.active,
+      };
+    });
+}
+
+/**
+ * 시트의 휴대폰 칸을 문자열로 정리한다.
+ * 01012345678 을 숫자로 입력하면 앞의 0 이 사라져 1012345678 이 된다 — 그대로 두면 로그인이 안 된다.
+ */
+function normalizePhoneCell_(v) {
+  var d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
+  if (d.length === 10 && d.charAt(0) !== '0') d = '0' + d;
+  return d;
+}
+
+/** 시트 내용의 지문. 플랫폼과 다를 때만 전량을 올린다. */
+function storesHash_() {
+  var rows = listStores_().filter(function (r) {
+    return !isFalse_(r.active);
+  });
+  var parts = rows.map(function (r) {
+    return [r.storeCode, r.storeName, r.ownerName, r.region, r.fcTeam, r.phone.slice(-4)].join('|');
+  });
+  parts.sort();
+  var raw = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_1,
+    parts.join('\n'),
+    Utilities.Charset.UTF_8,
+  );
+  var hex = '';
+  for (var i = 0; i < raw.length; i++) {
+    var b = (raw[i] + 256) % 256;
+    hex += (b < 16 ? '0' : '') + b.toString(16);
+  }
+  return hex.slice(0, 16);
+}
+
+/** isTrue_ 의 반대 — 명시적으로 비활성이라고 적은 경우만 참 */
+function isFalse_(v) {
+  return !isTrue_(v);
+}
+
 function findStaff_(email) {
   var all = listStaff_();
   for (var i = 0; i < all.length; i++) {
@@ -546,6 +607,17 @@ function setup() {
     ev.getRange(1, 1, ev.getLastRow(), EVENT_HEADERS.length).setNumberFormat('@'); // 날짜 자동서식 방지
   }
 
+  var st = ss.getSheetByName(STORE_SHEET);
+  if (!st) {
+    st = ss.insertSheet(STORE_SHEET);
+    st.appendRow(STORE_HEADERS);
+    st.appendRow(['20001', '강남역점', '김경영', '01012341001', 'SEOUL', '서울1팀', 'TRUE']);
+    st.setFrozenRows(1);
+    st.getRange(1, 1, 1, STORE_HEADERS.length).setFontWeight('bold');
+    // 휴대폰 번호 앞의 0 이 날아가지 않도록 전체를 텍스트 서식으로 둔다
+    st.getRange(1, 1, 1000, STORE_HEADERS.length).setNumberFormat('@');
+  }
+
   var logs = ss.getSheetByName(LOG_SHEET);
   if (!logs) {
     logs = ss.insertSheet(LOG_SHEET);
@@ -571,6 +643,7 @@ function setup() {
   Logger.log('   실제로 존재하지 않는 주소라 메일이 반송되고, 반송 알림이 발신 계정으로 돌아옵니다.');
   Logger.log('   실제 담당자 주소로 바꾸고 예시 행은 지우세요.');
   Logger.log('등록된 순회 일정: ' + listEvents_().length + '개');
+  Logger.log('등록된 점포: ' + listStores_().length + '개');
   Logger.log('오늘 남은 메일 발송 한도: ' + MailApp.getRemainingDailyQuota());
   Logger.log('───────────────────────────────────────────────');
   return key;
@@ -699,11 +772,27 @@ function pullAndSend() {
     // 본부 계정 원장을 함께 보낸다.
     // pull 모드에서는 플랫폼이 이 시트를 직접 읽을 수 없으므로,
     // 트리거가 올 때마다 최신 목록을 실어 보내 로그인 판정에 쓰게 한다.
-    pulled = callPlatform_('pull', { staff: listStaff_(), events: listEvents_() });
+    pulled = callPlatform_('pull', {
+      staff: listStaff_(),
+      events: listEvents_(),
+      // 점포는 만 단위라 전량이 아니라 지문만 보낸다
+      storesHash: storesHash_(),
+    });
   } catch (err) {
     log_('', 'PULL', 'error', String(err), '');
     return;
   }
+  // 시트가 바뀌었다고 하면 그때만 점포 전량을 올린다
+  if (pulled && pulled.needStores) {
+    try {
+      var res = callPlatform_('stores', { stores: listStores_() });
+      log_('', 'STORES', 'synced',
+        '반영 ' + res.upserted + ' 비활성 ' + res.deactivated + ' 건너뜀 ' + res.skipped, '');
+    } catch (err) {
+      log_('', 'STORES', 'error', String(err), '');
+    }
+  }
+
   // 플랫폼에서 고친 일정을 시트에 반영한다 (메일이 없어도 해야 한다)
   var eventResults = [];
   try {

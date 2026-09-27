@@ -31,6 +31,8 @@ const SHARED_KEYS = [
   'eventOverrides',
   'eventWrites',
   'eventsSyncedAt',
+  'stores',
+  'storesSyncedAt',
   'liveStreams',
   'liveSeeded',
   'sectionOverrides',

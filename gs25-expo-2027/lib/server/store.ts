@@ -110,6 +110,7 @@ interface DB {
   eventOverrides: Record<string, EventPatch>;
   eventWrites: EventWriteJob[];
   eventsSyncedAt?: number;
+  storesSyncedAt?: number;
   liveStreams: LiveStream[];
   /** 콘텐츠 원장 — 시드 위에 덮어쓰는 층 */
   sectionOverrides: Record<string, Partial<Section>>;

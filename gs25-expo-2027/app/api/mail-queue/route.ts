@@ -8,6 +8,7 @@ import {
   verifyPullRequest,
 } from '@/lib/server/mailQueue';
 import { staffDirectoryStatus, syncStaffDirectory } from '@/lib/server/staffDirectory';
+import { storeDirectoryStatus, storesHash, syncStores } from '@/lib/server/storeDirectory';
 import {
   claimEventWrites,
   completeEventWrite,
@@ -39,6 +40,8 @@ export async function POST(req: NextRequest) {
     staff?: unknown;
     events?: unknown;
     eventResults?: unknown;
+    stores?: unknown;
+    storesHash?: string;
   } = {};
   try {
     body = await req.json();
@@ -73,6 +76,10 @@ export async function POST(req: NextRequest) {
     // 관리자가 화면에서 고친 내용은 트리거가 가져가 시트에 쓴다.
     const eventWrites = claimEventWrites(20);
 
+    // 점포는 만 단위라 매분 전량을 주고받지 않는다.
+    // 트리거가 보낸 시트 해시가 원장과 다를 때만 전량을 요청한다.
+    const needStores = typeof body.storesHash === 'string' && body.storesHash !== storesHash();
+
     const jobs = claimPending(20);
     await flushShared();
     return NextResponse.json(
@@ -80,6 +87,7 @@ export async function POST(req: NextRequest) {
         ok: true,
         staffSync,
         eventSync,
+        needStores,
         eventWrites: eventWrites.map((w) => ({ id: w.id, eventId: w.eventId, patch: w.patch })),
         jobs: jobs.map((j) => ({
           id: j.id,
@@ -89,6 +97,22 @@ export async function POST(req: NextRequest) {
           expiresInSec: Math.max(60, Math.round((j.expiresAt - Date.now()) / 1000)),
         })),
       },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
+
+  if (body.action === 'stores') {
+    const result = syncStores(body.stores);
+    await flushShared();
+    audit({
+      uid: 'apps-script',
+      role: 'system',
+      action: 'stores.synced',
+      ip,
+      detail: `반영 ${result.upserted} 비활성 ${result.deactivated} 건너뜀 ${result.skipped}`,
+    });
+    return NextResponse.json(
+      { ok: true, ...result, status: storeDirectoryStatus() },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   }
@@ -125,6 +149,7 @@ export async function POST(req: NextRequest) {
       queue: queueStats(),
       staff: staffDirectoryStatus(),
       events: eventDirectoryStatus(),
+      stores: storeDirectoryStatus(),
     });
   }
 

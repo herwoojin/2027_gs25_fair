@@ -7,6 +7,7 @@
  *  - 클라이언트가 보낸 시각은 절대 신뢰하지 않고 서버 시각만 쓴다.
  */
 import nodeCrypto from 'node:crypto';
+import { lookupStore, storeDirectoryStatus } from './storeDirectory';
 import {
   catalogStatus,
   deleteProduct,
@@ -2209,6 +2210,15 @@ export async function adminStoreDelete(payload: unknown, ctx: Ctx) {
   return { ok: true, deactivated: false };
 }
 
+/** 관리자 · 점포 하나가 등록됐는지, 뒷4자리가 무엇인지 확인한다(문의 대응용). */
+export async function adminStoreLookup(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const { storeCode } = z.object({ storeCode: z.string().trim().min(1).max(12) }).parse(payload);
+  const found = lookupStore(storeCode);
+  audit({ uid: caller.uid, role: caller.role, action: 'store.lookup', target: storeCode, ip: ctx.ip });
+  return { found, status: storeDirectoryStatus() };
+}
+
 export async function adminAudit(payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
   const { limit } = z.object({ limit: z.number().int().min(1).max(500).default(100) }).parse(payload ?? {});
@@ -2275,9 +2285,11 @@ export async function adminCheers(payload: unknown, ctx: Ctx) {
 export async function adminWhitelistSync(_payload: unknown, ctx: Ctx) {
   const caller = requireStaff(readSession(ctx.token), ['admin']);
   audit({ uid: caller.uid, role: caller.role, action: 'whitelist.sync' });
-  // 운영: importStores Function 이 Google Sheets `Stores` 탭을 읽어 업서트한다.
+  // 시트 → 원장 반영은 Apps Script 트리거가 1분마다 맡는다(서버가 시트를 직접 읽을 수 없다).
+  // 여기서는 현재 상태만 돌려준다.
   return {
     ok: true,
+    status: storeDirectoryStatus(),
     stores: Object.values(db.stores).map((s) => ({
       storeCode: s.storeCode,
       storeName: s.storeName,
@@ -2395,6 +2407,7 @@ export const HANDLERS = {
   adminStoreList,
   adminStoreSave,
   adminStoreDelete,
+  adminStoreLookup,
 } as const;
 
 export type HandlerName = keyof typeof HANDLERS;
