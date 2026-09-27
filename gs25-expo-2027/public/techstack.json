@@ -141,6 +141,11 @@
           "name": "가이드맵 (GuideMap)",
           "purpose": "랜딩에서 전시장 평면도와 11개 존 동선을 미리 보여 준다. 좌표는 SECTIONS[].hallPosition 을 그대로 써서 3D 전시장과 배치가 항상 일치한다.",
           "config": "components/public/GuideMap.tsx · 기념품 티저 바로 위 블록"
+        },
+        {
+          "name": "군중 캔버스 (CrowdCanvas)",
+          "purpose": "지역 멘토 경영주 섹션 배경. 스프라이트 시트에서 잘라낸 인물이 좌우로 걸어 다닌다. Skiper39/codepen 원안은 gsap 을 쓰지만, 배경 장식에 70KB 라이브러리를 더할 이유가 없어 requestAnimationFrame 으로 직접 구현했다.",
+          "config": "components/ui/crowd-canvas.tsx · public/media/crowd.png (Open Peeps, CC0, 자체 호스팅 205KB)"
         }
       ]
     },

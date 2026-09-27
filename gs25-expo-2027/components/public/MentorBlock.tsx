@@ -3,6 +3,7 @@
 import { Quote, Store, Users } from 'lucide-react';
 import { REGION_MENTORS } from '@/lib/seed/outreach';
 import { Reveal } from '@/components/common/Reveal';
+import { CrowdCanvas } from '@/components/ui/crowd-canvas';
 
 /**
  * 지역 멘토 경영주 — 앞선 전시회에서 얻어간 내용을 지역에 전한다.
@@ -12,8 +13,26 @@ import { Reveal } from '@/components/common/Reveal';
  */
 export function MentorBlock({ accent }: { accent: string }) {
   return (
-    <section className="relative border-t border-white/10 px-5 py-20">
-      <div className="mx-auto max-w-6xl">
+    <section className="relative overflow-hidden border-t border-white/10 px-5 pb-44 pt-20">
+      {/*
+        배경 — 섹션 아래쪽을 가로지르는 군중 띠.
+        콘텐츠 아래에 여백(pb-44)을 두고 그 자리에 깔아, 글과 겹쳐 읽기 어려워지는 것을 막는다.
+      */}
+      <CrowdCanvas
+        src="/media/crowd.png"
+        count={22}
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[22rem] w-full opacity-60"
+      />
+      {/* 위쪽은 배경색으로 덮고 아래로 갈수록 군중이 드러나게 한다 */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[22rem]"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgb(5 10 24) 0%, rgb(5 10 24 / 0.86) 26%, rgb(5 10 24 / 0.35) 62%, rgb(5 10 24 / 0.1) 100%)',
+        }}
+      />
+      <div className="relative mx-auto max-w-6xl">
         <Reveal>
           <p
             className="mb-3 inline-flex items-center gap-2 rounded-pill border px-4 py-1.5 text-sm font-bold"
