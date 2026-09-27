@@ -307,8 +307,8 @@
         },
         {
           "name": "카카오맵 (Kakao Maps)",
-          "purpose": "오프라인 순회 9개 도시의 오시는 길. 길찾기·로드뷰·크게보기는 지도 URL 링크(키 불필요), 약도 임베드는 JavaScript SDK.",
-          "config": "lib/kakaoMap.ts · components/public/VenueDirections.tsx · NEXT_PUBLIC_KAKAO_MAP_KEY (미설정 시 임베드만 생략)"
+          "purpose": "오프라인 순회 9개 도시의 오시는 길. 약도는 map.kakao.com 검색 결과를 팝업(iframe)으로 띄우고, 길찾기·로드뷰는 지도 URL 링크. 전부 URL 방식이라 앱 키·도메인 등록·제품 활성화가 필요 없다.",
+          "config": "lib/kakaoMap.ts · components/public/VenueDirections.tsx · CSP frame-src 에 map.kakao.com 허용"
         }
       ]
     },

@@ -1,13 +1,10 @@
 /**
- * 카카오맵 연동.
+ * 카카오맵 연동 — 전부 URL 방식이다.
  *
- * 두 갈래로 나뉜다.
- *   1) 지도 URL 링크 — **앱 키가 필요 없다.** 길찾기·로드뷰·크게보기가 여기에 해당하며,
- *      사용자 환경에 따라 PC/모바일 카카오맵으로 자동 연결된다.
- *   2) JavaScript SDK 임베드 — 앱 키와 도메인 등록이 필요하다.
- *      키가 없으면 임베드만 빠지고 1)은 그대로 동작한다.
- *
- * 그래서 키를 아직 발급받지 못한 상태에서도 '오시는 길'은 온전히 쓸 수 있다.
+ * JavaScript SDK 를 쓰지 않는다. SDK 는 앱 키 + 도메인 등록 + 제품 활성화가 모두 맞아야 하고,
+ * 하나라도 어긋나면 403 으로 지도가 통째로 안 나온다. 실제로 그 상태를 겪었다.
+ * 반면 아래 URL 들은 **아무 설정 없이 지금 동작한다.**
+ * 약도는 map.kakao.com 검색 결과 페이지를 팝업(iframe)으로 띄워 대신한다.
  */
 
 const BASE = 'https://map.kakao.com/link';
@@ -57,9 +54,4 @@ export function kakaoDirectionsByUrl(mode: TravelMode, from: MapPlace, to: MapPl
 /** 검색 결과로 열기 — 좌표가 부정확할 때의 보완 경로 */
 export function kakaoSearchUrl(keyword: string): string {
   return `${BASE}/search/${encodeURIComponent(keyword)}`;
-}
-
-/** JavaScript SDK 키. 없으면 지도 임베드를 건너뛴다. */
-export function kakaoJsKey(): string {
-  return process.env.NEXT_PUBLIC_KAKAO_MAP_KEY ?? '';
 }

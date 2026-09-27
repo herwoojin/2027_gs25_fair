@@ -227,3 +227,13 @@ Netlify 의 Next.js 런타임은 **서버리스 함수**라서 요청마다 다�
 - 인증번호 본문은 `smsLogs` 에 저장하지 않음 (수신번호도 마스킹)
 - 발송 실패 시 1회 자동 재시도, 그래도 실패하면 쿠폰은 `failed` 로 남아 재발송 대상이 됨
 - `adminSmsStatus` / `adminSmsTest` 는 `admin` 역할만 호출 가능
+
+---
+
+## 카카오맵
+
+**설정할 것이 없습니다.** 약도는 `map.kakao.com` 검색 결과를 팝업(iframe)으로 띄우고,
+길찾기·로드뷰는 지도 URL 링크를 씁니다. 앱 키·도메인 등록·제품 활성화 모두 필요 없습니다.
+
+> JavaScript SDK 방식은 앱에서 카카오맵 제품이 꺼져 있으면 `403 disabled OPEN_MAP_AND_LOCAL service` 로
+> 지도가 통째로 막힙니다. 그래서 URL 방식으로 전환했습니다.

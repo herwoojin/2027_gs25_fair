@@ -136,7 +136,7 @@ flowchart TB
 | SOLAPI (Functions 경로) | SDK 5.3 | 동일 기능 | `functions/src/shared/solapi.ts` | Firebase 배포 시에만 사용 |
 | Google Sheets API | 140 | 백업 원장 · 화이트리스트 | `functions/src/shared/sheets.ts` | |
 | MS Power Automate | — | 일일 리포트 · 명단 갱신 HTTP | `functions/src/sync/index.ts` | `X-Integration-Key` timing-safe |
-| 카카오맵 | JS SDK v2 | 순회 9개 도시 오시는 길 · 길찾기/로드뷰 | `lib/kakaoMap.ts` | 링크는 키 불필요, 임베드만 키 필요 |
+| 카카오맵 | URL 방식 | 순회 9개 도시 오시는 길 · 약도 팝업 · 길찾기/로드뷰 | `lib/kakaoMap.ts` | SDK 미사용 — 앱 키·도메인 등록 불필요 |
 | YouTube (nocookie) | — | MD 라이브 임베드 | `app/(app)/live/page.tsx` | 일부공개, 로그인 사용자만 |
 
 ### 2.7 보안
