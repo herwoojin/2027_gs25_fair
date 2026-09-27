@@ -31,6 +31,8 @@ const SHARED_KEYS = [
   'eventOverrides',
   'eventWrites',
   'eventsSyncedAt',
+  'liveStreams',
+  'liveSeeded',
   'mailerLastPullAt',
   'rateLimits',
 ] as const;

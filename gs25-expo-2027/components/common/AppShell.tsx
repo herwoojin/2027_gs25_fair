@@ -18,6 +18,7 @@ import { useSession } from '@/lib/hooks/useSession';
 import { cn } from '@/lib/utils';
 import { FontSizeToggle } from './FontSizeToggle';
 import { Watermark } from './Watermark';
+import { CapacityBadge } from './CapacityBadge';
 
 /** PRD 3장 사이트맵 기준 · 모바일 하단 탭바 5개 */
 const TABS = [
@@ -76,6 +77,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="space-y-3 border-t border-gs-line p-4">
+          <CapacityBadge className="w-fit" />
           <div className="text-sm">
             <p className="font-bold text-gs-ink">{user?.displayName}</p>
             <p className="text-gs-muted">
@@ -101,6 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <BrandMark compact />
         </Link>
         <div className="flex items-center gap-2">
+          <CapacityBadge />
           <span className="hidden rounded-pill bg-gs-blue-light px-3 py-1 text-sm font-bold text-gs-blue sm:inline">
             {progress?.stampCount ?? 0}/11
           </span>

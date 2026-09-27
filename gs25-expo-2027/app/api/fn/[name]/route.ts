@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { HANDLERS, type HandlerName, type Ctx } from '@/lib/server/handlers';
 import { HttpError } from '@/lib/server/session';
 import { hydrateShared, flushShared } from '@/lib/server/sharedState';
+import { touchSession } from '@/lib/server/ops';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -37,6 +38,8 @@ export async function POST(req: NextRequest, { params }: { params: { name: strin
 
   // 서버리스 인스턴스가 갈려도 세션·대기열이 이어지도록 공유 상태를 먼저 읽는다.
   await hydrateShared();
+  // 실시간 동시접속 집계용 — 요청이 있을 때마다 활동 시각을 갱신한다.
+  touchSession(ctx.token);
 
   try {
     const result = await (handler as (p: unknown, c: Ctx) => Promise<unknown>)(payload, ctx);

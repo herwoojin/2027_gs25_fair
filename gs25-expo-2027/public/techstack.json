@@ -398,6 +398,16 @@
           "name": "문자 발송 진단 (adminSmsStatus / adminSmsTest)",
           "purpose": "솔라피 잔액·발신번호·발송 모드·최근 발송 이력을 관리자만 조회하고, 지정 번호로 테스트 1건을 보낸다.",
           "config": "lib/server/handlers.ts · admin 역할 전용"
+        },
+        {
+          "name": "동시접속 혼잡도 (CapacityBadge)",
+          "purpose": "최근 3분 활동 세션을 세어 원활함/혼잡/과다접속중으로 표시한다. 사용자 화면은 상태 문구만, 관리자 대시보드는 실제 인원·한도·비율까지 본다.",
+          "config": "lib/server/ops.ts · components/common/CapacityBadge.tsx · CONCURRENCY_LIMIT 환경변수(기본 300)"
+        },
+        {
+          "name": "운영 전환 패널 (OpsPanel)",
+          "purpose": "시연용 허수(점포·질문·응원)를 실데이터와 분리해 보여 주고 한 번에 정리한다. 시드 id 와 정확히 일치하는 것만 지워 실데이터는 건드리지 않는다.",
+          "config": "components/admin/OpsPanel.tsx · adminDataStatus / adminPurgeDemo"
         }
       ]
     },

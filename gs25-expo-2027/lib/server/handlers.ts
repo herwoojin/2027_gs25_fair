@@ -7,6 +7,15 @@
  *  - 클라이언트가 보낸 시각은 절대 신뢰하지 않고 서버 시각만 쓴다.
  */
 import nodeCrypto from 'node:crypto';
+import {
+  CAPACITY_LIMIT,
+  capacity,
+  demoCounts,
+  ensureLiveStreams,
+  purgeDemo,
+  realCounts,
+  touchSession,
+} from './ops';
 import { z } from 'zod';
 import {
   claimEventWrites,
@@ -1338,8 +1347,9 @@ export async function getLive(_payload: unknown, ctx: Ctx) {
   } catch {
     uid = null;
   }
+  ensureLiveStreams();
   const now = Date.now();
-  const streams = LIVE_STREAMS.map((s) => ({
+  const streams = db.liveStreams.map((s) => ({
     ...s,
     status: (now > s.endAt ? 'ended' : now >= s.startAt ? 'live' : 'scheduled') as LiveStatusLite,
     subscribed: uid ? (db.liveSubs[s.id] ?? []).includes(uid) : false,
@@ -1367,9 +1377,12 @@ export async function setLiveYoutubeId(payload: unknown, ctx: Ctx) {
   const { streamId, youtubeId } = z
     .object({ streamId: z.string(), youtubeId: z.string().max(20) })
     .parse(payload);
-  const s = LIVE_STREAMS.find((x) => x.id === streamId);
+  ensureLiveStreams();
+  // 예전에는 모듈 상수를 고쳤다. 그러면 저장되지 않고 인스턴스마다 값이 달라진다.
+  const s = db.liveStreams.find((x) => x.id === streamId);
   if (!s) throw new HttpError(404, '편성을 찾을 수 없습니다.', 'not-found');
   s.youtubeId = youtubeId || undefined;
+  persist();
   audit({ uid: caller.uid, role: caller.role, action: 'live.set_youtube', target: streamId });
   return { stream: s };
 }
@@ -1772,6 +1785,118 @@ export async function schedulerSaveEvent(payload: unknown, ctx: Ctx) {
   return { ok: true, jobId: job.id, events: mergedEvents(), status: eventDirectoryStatus() };
 }
 
+// ── 운영 데이터 관리 ──────────────────────────────────────────────
+
+/** 관리자 · 허수(시드) 와 실데이터를 나눠 보여 준다. */
+export async function adminDataStatus(_payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['admin']);
+  return { demo: demoCounts(), real: realCounts(), capacity: capacity() };
+}
+
+/** 관리자 · 허수를 지운다. 시드 id 와 정확히 일치하는 것만 지운다. */
+export async function adminPurgeDemo(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { confirm } = z.object({ confirm: z.literal(true) }).parse(payload);
+  void confirm;
+
+  const { removed } = purgeDemo();
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: 'admin.purge_demo',
+    ip: ctx.ip,
+    detail: `점포 ${removed.stores} 질문 ${removed.questions} 응원 ${removed.cheers}`,
+  });
+  return { removed, demo: demoCounts(), real: realCounts() };
+}
+
+// ── 라이브 편성 CRUD ──────────────────────────────────────────────
+
+export async function adminLiveList(_payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  ensureLiveStreams();
+  return { streams: [...db.liveStreams].sort((a, b) => a.startAt - b.startAt) };
+}
+
+const liveSaveSchema = z.object({
+  id: z.string().trim().max(40).optional(),
+  eventId: z.string().trim().min(1).max(40),
+  city: z.string().trim().min(1).max(40),
+  startAt: z.number().int().positive(),
+  endAt: z.number().int().positive(),
+  mdName: z.string().trim().min(1).max(40),
+  topic: z.string().trim().min(1).max(120),
+  youtubeId: z.string().trim().max(40).optional(),
+  status: z.enum(['scheduled', 'live', 'ended']).optional(),
+});
+
+export async function adminLiveSave(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  ensureLiveStreams();
+  const body = liveSaveSchema.parse(payload);
+  if (body.endAt <= body.startAt) {
+    throw new HttpError(400, '종료 시각이 시작 시각보다 빠릅니다.', 'bad-range');
+  }
+
+  const existing = body.id ? db.liveStreams.find((l) => l.id === body.id) : null;
+  if (body.id && !existing) throw new HttpError(404, '편성을 찾을 수 없습니다.', 'not-found');
+
+  if (existing) {
+    Object.assign(existing, {
+      eventId: body.eventId,
+      city: body.city,
+      startAt: body.startAt,
+      endAt: body.endAt,
+      mdName: body.mdName,
+      topic: body.topic,
+      youtubeId: body.youtubeId || undefined,
+      status: body.status ?? existing.status,
+    });
+  } else {
+    db.liveStreams.push({
+      id: newId('live_'),
+      eventId: body.eventId,
+      city: body.city,
+      startAt: body.startAt,
+      endAt: body.endAt,
+      mdName: body.mdName,
+      topic: body.topic,
+      youtubeId: body.youtubeId || undefined,
+      status: body.status ?? 'scheduled',
+    });
+  }
+  persist();
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: existing ? 'live.updated' : 'live.created',
+    target: body.id ?? body.topic,
+    ip: ctx.ip,
+  });
+  return { streams: [...db.liveStreams].sort((a, b) => a.startAt - b.startAt) };
+}
+
+export async function adminLiveDelete(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const { id } = z.object({ id: z.string().trim().min(1).max(40) }).parse(payload);
+  const before = db.liveStreams.length;
+  db.liveStreams = db.liveStreams.filter((l) => l.id !== id);
+  if (db.liveStreams.length === before) {
+    throw new HttpError(404, '편성을 찾을 수 없습니다.', 'not-found');
+  }
+  persist();
+  audit({ uid: caller.uid, role: caller.role, action: 'live.deleted', target: id, ip: ctx.ip });
+  return { streams: [...db.liveStreams].sort((a, b) => a.startAt - b.startAt) };
+}
+
+// ── 실시간 접속 현황 ──────────────────────────────────────────────
+
+/** 로그인 사용자 누구나 볼 수 있다. 혼잡도 배지에 쓰인다. */
+export async function getCapacity(_payload: unknown, ctx: Ctx) {
+  touchSession(ctx.token);
+  return capacity();
+}
+
 export async function adminAudit(payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
   const { limit } = z.object({ limit: z.number().int().min(1).max(500).default(100) }).parse(payload ?? {});
@@ -1941,6 +2066,12 @@ export const HANDLERS = {
   schedulerLogin,
   schedulerEvents,
   schedulerSaveEvent,
+  adminDataStatus,
+  adminPurgeDemo,
+  adminLiveList,
+  adminLiveSave,
+  adminLiveDelete,
+  getCapacity,
 } as const;
 
 export type HandlerName = keyof typeof HANDLERS;

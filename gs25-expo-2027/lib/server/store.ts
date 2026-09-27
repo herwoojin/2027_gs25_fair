@@ -21,6 +21,7 @@ import type {
   Survey,
   EventPatch,
   EventWriteJob,
+  LiveStream,
 } from '@/types';
 import { SLOTS } from '@/lib/seed/events';
 import { CHEERS, DEMO_STORES, QUESTIONS } from '@/lib/seed/misc';
@@ -75,6 +76,8 @@ export interface SessionRecord {
   region?: RegionCode;
   issuedAt: number;
   expiresAt: number;
+  /** 마지막 활동 시각 — 실시간 동시접속 집계에 쓴다 */
+  lastSeenAt?: number;
 }
 
 export interface AuditRecord {
@@ -104,6 +107,8 @@ interface DB {
   eventOverrides: Record<string, EventPatch>;
   eventWrites: EventWriteJob[];
   eventsSyncedAt?: number;
+  liveStreams: LiveStream[];
+  liveSeeded?: boolean;
   staffDirectory: Record<
     string,
     {
@@ -254,6 +259,7 @@ function seedDb(): DB {
     smsLogs: [],
     eventOverrides: {},
     eventWrites: [],
+    liveStreams: [],
     chatLogs: {},
     aiUsage: {},
     liveSubs: {},

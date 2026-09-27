@@ -205,3 +205,12 @@
     background: transparent;
   }
 }
+
+/* 혼잡도 배지 깜빡임 — 혼잡·과다접속에서만 쓴다 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes pulse { 0%, 100% { opacity: 1; } }
+}

@@ -15,8 +15,10 @@ import {
 } from 'recharts';
 import { Activity, CheckCircle2, LogIn, MessageCircleQuestion, Users } from 'lucide-react';
 import type { AggregateStats } from '@/types';
+import { formatDateKo } from '@/lib/utils';
 import { REGIONS } from '@/types';
 import { callFn } from '@/lib/api';
+import { OpsPanel } from '@/components/admin/OpsPanel';
 
 /** T8-1 · 관리자 대시보드 — aggregates/stats 1건 구독 */
 export default function DashboardPage() {
@@ -42,12 +44,13 @@ export default function DashboardPage() {
       <header>
         <h1 className="text-2xl font-bold">실시간 현황</h1>
         <p className="text-sm text-gs-muted">
-          {s ? `${new Date(s.updatedAt).toLocaleTimeString('ko-KR')} 기준 · 1분마다 갱신` : '불러오는 중…'}
+          {s ? `${formatDateKo(s.updatedAt, true)} 기준 · 1분마다 갱신` : '불러오는 중…'}
         </p>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Card icon={Activity} label="현재 접속자" value={s?.onlineNow} accent />
+      <OpsPanel />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card icon={LogIn} label="오늘 로그인" value={s?.todayLoginCount} />
         <Card icon={Users} label="누적 로그인" value={s?.loginCount} sub={s ? `등록 ${s.registeredCount.toLocaleString()}` : ''} />
         <Card
