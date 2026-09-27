@@ -8,6 +8,7 @@ import { callFn, type ApiError } from '@/lib/api';
 import { useSession } from '@/lib/hooks/useSession';
 import { cn, formatDateKo } from '@/lib/utils';
 import { useToast } from '@/components/common/Toast';
+import { CatalogEditor } from './CatalogEditor';
 
 interface ContentData {
   sections: Section[];
@@ -210,6 +211,7 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-2">
       <dt className="text-gs-muted">{label}</dt>
       <dd className="font-semibold">{value}</dd>
+      <CatalogEditor />
     </div>
   );
 }

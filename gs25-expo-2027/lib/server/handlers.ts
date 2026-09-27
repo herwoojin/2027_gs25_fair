@@ -8,6 +8,22 @@
  */
 import nodeCrypto from 'node:crypto';
 import {
+  catalogStatus,
+  deleteProduct,
+  deleteQuiz,
+  deleteSouvenir,
+  mergedProducts,
+  mergedSections,
+  mergedQuiz,
+  mergedQuizAnswer,
+  mergedSouvenirs,
+  resetCatalog,
+  saveProduct,
+  saveQuiz,
+  saveSectionPatch,
+  saveSouvenir,
+} from './catalog';
+import {
   CAPACITY_LIMIT,
   capacity,
   demoCounts,
@@ -72,6 +88,8 @@ import {
   nextCompletionNo,
   persist,
   queueSheetRow,
+  maskPhone,
+  encryptPhone,
 } from './store';
 import { HttpError, issueSession, logout, readSession, requireOwner, requireStaff } from './session';
 import { enqueueMail, mailerMode, OTP_TTL_SEC, queueStats } from './mailQueue';
@@ -600,9 +618,9 @@ export async function getProductContent(payload: unknown, ctx: Ctx) {
 export async function getExhibitIndex(_payload: unknown, ctx: Ctx) {
   readSession(ctx.token);
   return {
-    sections: SECTIONS,
+    sections: mergedSections(),
     productCounts: Object.fromEntries(
-      SECTIONS.map((s) => [s.id, productsBySection(s.id).length]),
+      mergedSections().map((s) => [s.id, mergedProducts().filter((p) => p.sectionId === s.id).length]),
     ),
   };
 }
@@ -686,7 +704,13 @@ export async function submitQuiz(payload: unknown, ctx: Ctx) {
   const { productId, choice } = quizSchema.parse(payload);
 
   const quiz = QUIZ_BY_ID[productId];
-  const answer = QUIZ_ANSWERS[productId];
+  // 관리자가 고친 정답이 있으면 그것을 쓴다. 해설은 시드 쪽을 이어 쓴다.
+  const seedAnswer = QUIZ_ANSWERS[productId];
+  const overridden = mergedQuizAnswer(productId);
+  const answer =
+    overridden !== null && overridden !== seedAnswer?.answerIndex
+      ? { answerIndex: overridden, explanation: seedAnswer?.explanation ?? '' }
+      : seedAnswer;
   if (!quiz || !answer) throw new HttpError(404, '퀴즈가 없습니다.', 'not-found');
   if (choice >= quiz.options.length) throw new HttpError(400, '잘못된 선택입니다.', 'invalid-choice');
 
@@ -738,7 +762,7 @@ export async function submitSurvey(payload: unknown, ctx: Ctx) {
   const body = surveySchema.parse(payload);
   const p = ensureProgress(caller.uid, caller.storeCode, caller.region);
 
-  const needed = SECTIONS.filter((s) => s.slug !== 'exit');
+  const needed = mergedSections().filter((s) => s.slug !== 'exit');
   const missing = needed.filter((s) => !p.stamps[s.id]);
   if (missing.length > 0) {
     throw new HttpError(
@@ -1319,7 +1343,7 @@ export async function getSouvenirs(_payload: unknown, ctx: Ctx) {
     cur.given += v.given;
   }
   return {
-    souvenirs: SOUVENIRS.map((s: Souvenir) => {
+    souvenirs: mergedSouvenirs().map((s: Souvenir) => {
       const revealed = now >= s.revealAt;
       const hintOpen = stampCount >= s.stampToHint;
       return {
@@ -1411,7 +1435,7 @@ export async function getPublicHome(_payload: unknown, _ctx: Ctx) {
       lng: e.lng,
       order: e.order,
     })),
-    souvenirCount: SOUVENIRS.length,
+    souvenirCount: mergedSouvenirs().length,
   };
 }
 
@@ -1897,6 +1921,294 @@ export async function getCapacity(_payload: unknown, ctx: Ctx) {
   return capacity();
 }
 
+// ── 콘텐츠 원장 (섹션·상품·퀴즈·기념품) ──────────────────────────
+/**
+ * 섹션은 수정만 허용한다. hallPosition 이 3D 전시장과 가이드맵 배치를 함께 정하므로,
+ * 추가·삭제는 좌표 재설계가 따라와야 한다.
+ */
+export async function adminCatalog(_payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['md', 'operator', 'admin']);
+  return {
+    sections: mergedSections(),
+    products: mergedProducts(),
+    souvenirs: mergedSouvenirs(),
+    status: catalogStatus(),
+  };
+}
+
+const sectionPatchSchema = z.object({
+  id: z.string().trim().min(1).max(40),
+  title: z.string().trim().min(1).max(40).optional(),
+  subtitle: z.string().trim().max(120).optional(),
+  estMinutes: z.number().int().min(1).max(120).optional(),
+  minDwellSec: z.number().int().min(0).max(600).optional(),
+  isOpen: z.boolean().optional(),
+});
+
+export async function adminSaveSection(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { id, ...patch } = sectionPatchSchema.parse(payload);
+  if (!mergedSections().some((s) => s.id === id)) {
+    throw new HttpError(404, '섹션을 찾을 수 없습니다.', 'not-found');
+  }
+  const clean = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
+  if (Object.keys(clean).length === 0) throw new HttpError(400, '변경할 내용이 없습니다.', 'empty-patch');
+  saveSectionPatch(id, clean);
+  audit({ uid: caller.uid, role: caller.role, action: 'catalog.section_saved', target: id, ip: ctx.ip });
+  return { sections: mergedSections(), status: catalogStatus() };
+}
+
+const productSchema = z.object({
+  id: z.string().trim().max(60).optional(),
+  sectionId: z.string().trim().min(1).max(40),
+  name: z.string().trim().min(1).max(60),
+  category: z.string().trim().min(1).max(30),
+  summary3: z.array(z.string().trim().max(120)).max(3).default([]),
+  script: z.string().trim().max(4000).default(''),
+  aiContext: z.string().trim().max(4000).default(''),
+  launchDate: z.string().trim().max(20).optional(),
+  order: z.number().int().min(1).max(999).default(1),
+});
+
+export async function adminSaveProduct(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['md', 'admin']);
+  const body = productSchema.parse(payload);
+  if (!mergedSections().some((s) => s.id === body.sectionId)) {
+    throw new HttpError(400, '알 수 없는 섹션입니다.', 'unknown-section');
+  }
+  const existing = body.id ? mergedProducts().find((p) => p.id === body.id) : null;
+  if (body.id && !existing) throw new HttpError(404, '상품을 찾을 수 없습니다.', 'not-found');
+
+  const product = {
+    ...(existing ?? {}),
+    ...body,
+    id: body.id ?? newId('p_'),
+    summary3: body.summary3.filter(Boolean),
+  } as Parameters<typeof saveProduct>[0];
+
+  saveProduct(product);
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: existing ? 'catalog.product_updated' : 'catalog.product_created',
+    target: product.id,
+    ip: ctx.ip,
+  });
+  return { products: mergedProducts(), status: catalogStatus() };
+}
+
+export async function adminDeleteProduct(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { id } = z.object({ id: z.string().trim().min(1).max(60) }).parse(payload);
+  if (!mergedProducts().some((p) => p.id === id)) {
+    throw new HttpError(404, '상품을 찾을 수 없습니다.', 'not-found');
+  }
+  // 필수 상품으로 지정된 것을 지우면 그 섹션은 영원히 완주 불가가 된다.
+  const blocking = mergedSections().find((s) => s.requiredProductIds.includes(id));
+  if (blocking) {
+    throw new HttpError(
+      400,
+      `${blocking.title} 섹션의 필수 상품입니다. 섹션 설정에서 먼저 제외해 주세요.`,
+      'required-product',
+    );
+  }
+  deleteProduct(id);
+  deleteQuiz(id);
+  audit({ uid: caller.uid, role: caller.role, action: 'catalog.product_deleted', target: id, ip: ctx.ip });
+  return { products: mergedProducts(), status: catalogStatus() };
+}
+
+const adminQuizSchema = z.object({
+  productId: z.string().trim().min(1).max(60),
+  question: z.string().trim().min(1).max(200),
+  options: z.array(z.string().trim().min(1).max(80)).min(2).max(5),
+  answerIndex: z.number().int().min(0).max(4),
+});
+
+export async function adminSaveQuiz(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['md', 'admin']);
+  const { productId, question, options, answerIndex } = adminQuizSchema.parse(payload);
+  if (answerIndex >= options.length) {
+    throw new HttpError(400, '정답 번호가 보기 범위를 벗어납니다.', 'bad-answer');
+  }
+  if (!mergedProducts().some((p) => p.id === productId)) {
+    throw new HttpError(404, '상품을 찾을 수 없습니다.', 'not-found');
+  }
+  saveQuiz(productId, question, options, answerIndex);
+  // 정답은 감사 로그에도 남기지 않는다.
+  audit({ uid: caller.uid, role: caller.role, action: 'catalog.quiz_saved', target: productId, ip: ctx.ip });
+  return { ok: true, status: catalogStatus() };
+}
+
+const souvenirSchema = z.object({
+  id: z.string().trim().max(40).optional(),
+  name: z.string().trim().min(1).max(40),
+  hint: z.string().trim().max(120).default(''),
+  shape: z.enum(['badge', 'keyring', 'kit', 'pen', 'apparel']),
+  revealAt: z.number().int().positive(),
+  stampToHint: z.number().int().min(0).max(11).default(0),
+  order: z.number().int().min(1).max(99).default(1),
+});
+
+export async function adminSaveSouvenir(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const body = souvenirSchema.parse(payload);
+  const existing = body.id ? mergedSouvenirs().find((s) => s.id === body.id) : null;
+  if (body.id && !existing) throw new HttpError(404, '기념품을 찾을 수 없습니다.', 'not-found');
+
+  saveSouvenir({ ...(existing ?? {}), ...body, id: body.id ?? newId('sv_') } as Parameters<
+    typeof saveSouvenir
+  >[0]);
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: existing ? 'catalog.souvenir_updated' : 'catalog.souvenir_created',
+    target: body.id ?? body.name,
+    ip: ctx.ip,
+  });
+  return { souvenirs: mergedSouvenirs(), status: catalogStatus() };
+}
+
+export async function adminDeleteSouvenir(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { id } = z.object({ id: z.string().trim().min(1).max(40) }).parse(payload);
+  if (!mergedSouvenirs().some((s) => s.id === id)) {
+    throw new HttpError(404, '기념품을 찾을 수 없습니다.', 'not-found');
+  }
+  deleteSouvenir(id);
+  audit({ uid: caller.uid, role: caller.role, action: 'catalog.souvenir_deleted', target: id, ip: ctx.ip });
+  return { souvenirs: mergedSouvenirs(), status: catalogStatus() };
+}
+
+export async function adminResetCatalog(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  z.object({ confirm: z.literal(true) }).parse(payload);
+  resetCatalog();
+  audit({ uid: caller.uid, role: caller.role, action: 'catalog.reset', ip: ctx.ip });
+  return { sections: mergedSections(), products: mergedProducts(), souvenirs: mergedSouvenirs(), status: catalogStatus() };
+}
+
+// ── 점포 화이트리스트 CRUD ────────────────────────────────────────
+/**
+ * 구글시트 동기화만으로는 "한 점포만 급히 추가/제외" 가 안 된다.
+ * 현장에서 흔히 생기는 요구라 개별 편집을 연다.
+ * 전화번호는 절대 평문으로 저장하지 않는다(PRD S-11) — 암호문 + 뒷4자리 해시만 남긴다.
+ */
+const storeListSchema = z.object({
+  q: z.string().trim().max(40).default(''),
+  page: z.number().int().min(1).max(500).default(1),
+  pageSize: z.number().int().min(10).max(200).default(50),
+  onlyInactive: z.boolean().default(false),
+});
+
+export async function adminStoreList(payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const { q, page, pageSize, onlyInactive } = storeListSchema.parse(payload ?? {});
+  const needle = q.toLowerCase();
+
+  let rows = Object.values(db.stores);
+  if (onlyInactive) rows = rows.filter((s) => !s.active);
+  if (needle) {
+    rows = rows.filter(
+      (s) =>
+        s.storeCode.toLowerCase().includes(needle) ||
+        s.storeName.toLowerCase().includes(needle) ||
+        s.ownerName.toLowerCase().includes(needle),
+    );
+  }
+  rows.sort((a, b) => a.storeCode.localeCompare(b.storeCode));
+
+  const total = rows.length;
+  const slice = rows.slice((page - 1) * pageSize, page * pageSize);
+  return {
+    total,
+    page,
+    pageSize,
+    rows: slice.map((s) => ({
+      storeCode: s.storeCode,
+      storeName: s.storeName,
+      ownerName: s.ownerName,
+      region: s.region,
+      fcTeam: s.fcTeam,
+      active: s.active,
+      // 평문은 내려보내지 않는다. 마스킹된 형태만.
+      phoneMasked: maskPhone(decryptPhone(s.phoneEnc)),
+      syncedAt: s.syncedAt,
+    })),
+  };
+}
+
+const storeSaveSchema = z.object({
+  storeCode: z.string().trim().min(3).max(12),
+  storeName: z.string().trim().min(1).max(40),
+  ownerName: z.string().trim().min(1).max(30),
+  /** 새로 등록하거나 번호를 바꿀 때만 보낸다. 빈 값이면 기존 번호를 유지한다. */
+  phone: z.string().trim().regex(/^0\d{8,10}$/).optional(),
+  region: z.enum(['SEOUL', 'GYEONGGI', 'GANGWON', 'CHUNGCHEONG', 'DAEGU', 'ULSAN', 'BUSAN', 'GWANGJU', 'JEJU']),
+  fcTeam: z.string().trim().max(30).default(''),
+  active: z.boolean().default(true),
+});
+
+export async function adminStoreSave(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const b = storeSaveSchema.parse(payload);
+  const existing = db.stores[b.storeCode];
+
+  if (!existing && !b.phone) {
+    throw new HttpError(400, '새 점포는 휴대폰 번호가 필요합니다.', 'phone-required');
+  }
+
+  const phoneEnc = b.phone ? encryptPhone(b.phone) : existing.phoneEnc;
+  const phoneLast4Hash = b.phone
+    ? hashLast4(b.phone.slice(-4), b.storeCode)
+    : existing.phoneLast4Hash;
+
+  db.stores[b.storeCode] = {
+    storeCode: b.storeCode,
+    storeName: b.storeName,
+    ownerName: b.ownerName,
+    phoneEnc,
+    phoneLast4Hash,
+    region: b.region,
+    fcTeam: b.fcTeam,
+    active: b.active,
+    syncedAt: Date.now(),
+  };
+  persist();
+  audit({
+    uid: caller.uid,
+    role: caller.role,
+    action: existing ? 'store.updated' : 'store.created',
+    target: b.storeCode,
+    ip: ctx.ip,
+    // 번호 자체는 남기지 않고, 바꿨는지 여부만 남긴다.
+    detail: b.phone ? '번호 변경 포함' : '',
+  });
+  return { ok: true, storeCode: b.storeCode };
+}
+
+export async function adminStoreDelete(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['admin']);
+  const { storeCode } = z.object({ storeCode: z.string().trim().min(3).max(12) }).parse(payload);
+  const s = db.stores[storeCode];
+  if (!s) throw new HttpError(404, '점포를 찾을 수 없습니다.', 'not-found');
+
+  // 이미 참여한 점포를 지우면 스탬프·쿠폰 기록이 고아가 된다.
+  // 지우는 대신 비활성으로 돌려 접속만 막는 편이 안전하다.
+  const joined = Object.values(db.users).some((u) => u.storeCode === storeCode);
+  if (joined) {
+    s.active = false;
+    persist();
+    audit({ uid: caller.uid, role: caller.role, action: 'store.deactivated', target: storeCode, ip: ctx.ip });
+    return { ok: true, deactivated: true, message: '이미 참여 기록이 있어 비활성 처리했습니다.' };
+  }
+
+  delete db.stores[storeCode];
+  persist();
+  audit({ uid: caller.uid, role: caller.role, action: 'store.deleted', target: storeCode, ip: ctx.ip });
+  return { ok: true, deactivated: false };
+}
+
 export async function adminAudit(payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
   const { limit } = z.object({ limit: z.number().int().min(1).max(500).default(100) }).parse(payload ?? {});
@@ -1938,15 +2250,15 @@ export async function getPublicConfig(_payload: unknown, _ctx: Ctx) {
 export async function adminContent(_payload: unknown, ctx: Ctx) {
   requireStaff(readSession(ctx.token), ['admin']);
   return {
-    sections: SECTIONS,
-    products: PRODUCTS.map(({ aiContext, script, ...rest }) => ({
+    sections: mergedSections(),
+    products: mergedProducts().map(({ aiContext, script, ...rest }) => ({
       ...rest,
       scriptLength: script.length,
       hasAiContext: aiContext.length > 0,
     })),
-    quizzes: QUIZZES,
+    quizzes: mergedProducts().map((p) => mergedQuiz(p.id)).filter(Boolean),
     popupNews: POPUP_NEWS,
-    souvenirs: SOUVENIRS,
+    souvenirs: mergedSouvenirs(),
     messages: MESSAGES,
   };
 }
@@ -1985,7 +2297,7 @@ export async function myPage(_payload: unknown, ctx: Ctx) {
   const r = db.reservations.find((x) => x.uid === caller.uid && x.status !== 'cancelled');
   return {
     progress: p,
-    sections: SECTIONS,
+    sections: mergedSections(),
     storeName: db.stores[caller.storeCode]?.storeName ?? caller.storeCode,
     questions: db.questions.filter((q) => q.uid === caller.uid),
     reservation: r ?? null,
@@ -2072,6 +2384,17 @@ export const HANDLERS = {
   adminLiveSave,
   adminLiveDelete,
   getCapacity,
+  adminCatalog,
+  adminSaveSection,
+  adminSaveProduct,
+  adminDeleteProduct,
+  adminSaveQuiz,
+  adminSaveSouvenir,
+  adminDeleteSouvenir,
+  adminResetCatalog,
+  adminStoreList,
+  adminStoreSave,
+  adminStoreDelete,
 } as const;
 
 export type HandlerName = keyof typeof HANDLERS;

@@ -274,6 +274,16 @@
           "name": "순회 일정 원장 (Events 시트 양방향)",
           "purpose": "구글시트 Events 탭과 일정을 양방향으로 맞춘다. 시트→사이트는 트리거가 pull 할 때 실어 보내고, 사이트→시트는 큐에 쌓아 다음 pull 때 트리거가 기록한다. 화면은 저장 즉시 반영된다.",
           "config": "lib/server/eventDirectory.ts · apps-script/Code.gs (listEvents_ / applyEventWrites_)"
+        },
+        {
+          "name": "콘텐츠 원장 (override 층)",
+          "purpose": "섹션·상품·퀴즈·기념품을 운영 중에 편집한다. 시드 상수 위에 수정분/추가분/삭제분을 쌓는 구조라 원본을 건드리지 않고, 언제든 원본으로 되돌릴 수 있다.",
+          "config": "lib/server/catalog.ts · /admin/content"
+        },
+        {
+          "name": "점포 화이트리스트 개별 편집",
+          "purpose": "구글시트 동기화와 별개로 점포를 하나씩 추가·수정·제외한다. 전화번호는 암호문+뒷4자리 해시만 저장하고 화면에는 마스킹만 내려간다. 참여 기록이 있는 점포는 삭제 대신 비활성 처리한다.",
+          "config": "lib/server/handlers.ts adminStoreList/Save/Delete · /admin/whitelist"
         }
       ]
     },

@@ -22,6 +22,9 @@ import type {
   EventPatch,
   EventWriteJob,
   LiveStream,
+  Section,
+  Product,
+  Souvenir,
 } from '@/types';
 import { SLOTS } from '@/lib/seed/events';
 import { CHEERS, DEMO_STORES, QUESTIONS } from '@/lib/seed/misc';
@@ -108,6 +111,15 @@ interface DB {
   eventWrites: EventWriteJob[];
   eventsSyncedAt?: number;
   liveStreams: LiveStream[];
+  /** 콘텐츠 원장 — 시드 위에 덮어쓰는 층 */
+  sectionOverrides: Record<string, Partial<Section>>;
+  productOverrides: Record<string, Partial<Product>>;
+  productAdded: Product[];
+  productDeleted: string[];
+  quizOverrides: Record<string, { question: string; options: string[]; answerIndex: number }>;
+  souvenirOverrides: Record<string, Partial<Souvenir>>;
+  souvenirAdded: Souvenir[];
+  souvenirDeleted: string[];
   liveSeeded?: boolean;
   staffDirectory: Record<
     string,
@@ -260,6 +272,14 @@ function seedDb(): DB {
     eventOverrides: {},
     eventWrites: [],
     liveStreams: [],
+    sectionOverrides: {},
+    productOverrides: {},
+    productAdded: [],
+    productDeleted: [],
+    quizOverrides: {},
+    souvenirOverrides: {},
+    souvenirAdded: [],
+    souvenirDeleted: [],
     chatLogs: {},
     aiUsage: {},
     liveSubs: {},

@@ -7,6 +7,7 @@ import type { RegionCode } from '@/types';
 import { REGION_LABEL } from '@/types';
 import { callFn, type ApiError } from '@/lib/api';
 import { useToast } from '@/components/common/Toast';
+import { StoreEditor } from './StoreEditor';
 
 interface StoreRow {
   storeCode: string;
@@ -154,6 +155,7 @@ function MailerStatus() {
           </p>
         )}
       </div>
+      <StoreEditor />
     </div>
   );
 }
