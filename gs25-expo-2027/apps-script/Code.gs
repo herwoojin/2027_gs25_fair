@@ -130,9 +130,7 @@ function sendOtp_(p) {
   var minutes = Math.max(1, Math.round(expiresInSec / 60));
   MailApp.sendEmail({
     to: email,
-    // 인증번호를 제목에 넣지 않는다. 알림 미리보기·잠금화면에 그대로 뜨고,
-    // 수신 주소가 없어 반송되면 반송 알림이 원본 제목을 인용해 발신자에게 되돌려준다.
-    subject: '[GS25 상품전략공유회] 본부 로그인 인증번호',
+    subject: otpSubject_(),
     htmlBody: buildHtml_(staff.name || email, code, minutes),
     body: buildText_(staff.name || email, code, minutes),
     name: 'GS25 상품전략공유회',
@@ -151,6 +149,19 @@ function sendOtp_(p) {
     backupFor: staff.backupFor,
     remainingQuota: MailApp.getRemainingDailyQuota(),
   };
+}
+
+/**
+ * 메일 제목.
+ *
+ * 인증번호는 넣지 않는다(알림 미리보기·반송 알림으로 새어 나간다).
+ * 대신 **발송 시각을 붙여 제목을 매번 다르게** 만든다.
+ * 제목이 같으면 Gmail 이 같은 대화로 묶어 버려서, 두 번째 인증번호가
+ * 첫 메일 스레드 안에 접혀 들어가 '메일이 안 왔다' 로 보인다.
+ */
+function otpSubject_() {
+  var at = Utilities.formatDate(new Date(), 'Asia/Seoul', 'M월 d일 HH:mm');
+  return '[GS25 상품전략공유회] 본부 로그인 인증번호 (' + at + ')';
 }
 
 function buildHtml_(name, code, minutes) {
@@ -728,8 +739,7 @@ function pullAndSend() {
       var minutes = Math.max(1, Math.round(Number(j.expiresInSec || 600) / 60));
       MailApp.sendEmail({
         to: email,
-        // 인증번호는 본문에만 둔다 (제목에 넣으면 반송 알림으로 되돌아온다)
-        subject: '[GS25 상품전략공유회] 본부 로그인 인증번호',
+        subject: otpSubject_(),
         htmlBody: buildHtml_(staff.name || email, j.code, minutes),
         body: buildText_(staff.name || email, j.code, minutes),
         name: 'GS25 상품전략공유회',
