@@ -13,30 +13,81 @@ export function cn(...inputs: ClassValue[]) {
  */
 export const KST = 'Asia/Seoul';
 
+/**
+ * 날짜 표기는 Intl 을 쓰지 않고 직접 만든다.
+ *
+ * 왜 — Intl 의 한국어 결과는 **실행 환경의 ICU 데이터에 따라 달라진다.**
+ * 넷리파이의 Node 는 로케일 데이터가 빠진 빌드라 `ko-KR` 오전/오후를 `AM`/`PM` 으로 낸다.
+ * 서버는 "9월 19일 AM 09:00", 브라우저는 "9월 19일 오전 09:00" 을 만들어
+ * 하이드레이션이 깨지고(React #418·#425) 결국 루트 전체가 클라이언트 렌더로 넘어갔다(#423).
+ *
+ * KST 는 서머타임이 없는 UTC+9 고정이라, 9시간을 더하고 UTC 필드를 읽으면 정확하다.
+ * 어느 런타임에서도 같은 문자열이 나온다.
+ */
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const WEEKDAY_KO = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+interface KstParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  weekday: string;
+}
+
+function kstParts(ts: number | string): KstParts {
+  const ms = typeof ts === 'string' ? Date.parse(`${ts}T00:00:00+09:00`) : ts;
+  const d = new Date(ms + KST_OFFSET_MS);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+    hour: d.getUTCHours(),
+    minute: d.getUTCMinutes(),
+    weekday: WEEKDAY_KO[d.getUTCDay()],
+  };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** 오전/오후 12시간제 — Intl 없이 고정 표기 */
+function ampmKo(hour: number, minute: number): string {
+  const label = hour < 12 ? '오전' : '오후';
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${label} ${pad2(h12)}:${pad2(minute)}`;
+}
+
+/** 예: 9월 19일 (토) · withTime 이면 뒤에 오전 09:00 */
 export function formatDateKo(ts: number | string, withTime = false): string {
-  const d = typeof ts === 'string' ? new Date(`${ts}T00:00:00+09:00`) : new Date(ts);
-  return d.toLocaleString('ko-KR', {
-    timeZone: KST,
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-    ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
-  });
+  const p = kstParts(ts);
+  const base = `${p.month}월 ${p.day}일 (${p.weekday})`;
+  return withTime ? `${base} ${ampmKo(p.hour, p.minute)}` : base;
 }
 
-export function formatDateTimeKo(ts: number, opts: Intl.DateTimeFormatOptions = {}): string {
-  return new Date(ts).toLocaleString('ko-KR', { timeZone: KST, ...opts });
+/**
+ * 예: 9월 19일 오전 09:00
+ * opts 는 Intl 시절 호출부와의 호환을 위해 받되, 쓰는 키만 본다.
+ */
+export function formatDateTimeKo(
+  ts: number,
+  opts: { month?: unknown; day?: unknown; hour?: unknown; minute?: unknown; year?: unknown } = {},
+): string {
+  const p = kstParts(ts);
+  const wantsTime = opts.hour !== undefined || opts.minute !== undefined;
+  const wantsYear = opts.year !== undefined;
+  const head = `${wantsYear ? `${p.year}년 ` : ''}${p.month}월 ${p.day}일`;
+  // 옵션을 주지 않으면 날짜+시각을 모두 보여 준다(기존 toLocaleString 과 같은 기본값)
+  const showTime = wantsTime || Object.keys(opts).length === 0;
+  return showTime ? `${head} ${ampmKo(p.hour, p.minute)}` : head;
 }
 
+/** 예: 10. 5. (월) – 10. 9. (금) */
 export function formatRange(start: string, end: string): string {
-  // getMonth()/getDay() 는 실행 환경의 타임존을 따르므로 Intl 로 KST 고정 포맷한다.
-  const fmt = (iso: string) =>
-    new Date(`${iso}T00:00:00+09:00`).toLocaleDateString('ko-KR', {
-      timeZone: KST,
-      month: 'numeric',
-      day: 'numeric',
-      weekday: 'short',
-    });
+  const fmt = (iso: string) => {
+    const p = kstParts(iso);
+    return `${p.month}. ${p.day}. (${p.weekday})`;
+  };
   return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
 }
 
