@@ -239,6 +239,56 @@ export interface Cheer {
   createdAt: number;
 }
 
+/**
+ * 지역 멘토 경영주 사례.
+ *
+ * **공개 랜딩에 실명·점포명이 노출되는 유일한 사용자 작성 콘텐츠**다.
+ * 그래서 다른 글과 달리 두 가지를 반드시 갖는다.
+ *   1) `consentAt` — 공개에 동의한 시각. 동의 없이 올라가면 그 자체가 사고다.
+ *   2) `status` — 관리자가 published 로 바꾸기 전에는 절대 공개되지 않는다.
+ * 경영주가 스스로 내릴 수 있도록 withdrawn 도 둔다(철회권).
+ */
+export type MentorStoryStatus = 'pending' | 'published' | 'rejected' | 'withdrawn';
+
+/** 이름 표기 방식 — 경영주가 직접 고른다 */
+export type MentorDisplayMode = 'full' | 'masked' | 'store';
+
+export interface MentorStory {
+  id: string;
+  uid: string;
+  storeCode: string;
+  /** 순회 도시 id — 지역 묶음의 기준 */
+  eventId: string;
+  region: RegionCode;
+  /** 원본 이름. 공개 시에는 displayMode 에 따라 가공해 내보낸다 */
+  ownerName: string;
+  storeName: string;
+  displayMode: MentorDisplayMode;
+  /** 전시회에서 얻어가 점포에 적용한 내용 */
+  takeaway: string;
+  /** 적용 후 달라진 점 */
+  result: string;
+  status: MentorStoryStatus;
+  /** 공개 동의 시각 — 증빙이므로 지우지 않는다 */
+  consentAt: number;
+  createdAt: number;
+  updatedAt: number;
+  reviewedAt?: number;
+  reviewedBy?: string;
+  /** 반려 사유 — 경영주에게 그대로 보여 준다 */
+  rejectReason?: string;
+}
+
+/** 공개 랜딩에 내보내는 형태 — 개인정보를 이미 가공한 뒤다 */
+export interface PublicMentor {
+  eventId: string;
+  region: string;
+  authorLabel: string;
+  storeName: string;
+  takeaway: string;
+  result: string;
+}
+
 export interface ChatTurn {
   id: string;
   sectionId: string;

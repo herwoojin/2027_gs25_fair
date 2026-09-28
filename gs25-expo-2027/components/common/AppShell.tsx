@@ -13,6 +13,7 @@ import {
   Radio,
   Gift,
   LogOut,
+  Users,
 } from 'lucide-react';
 import { useSession } from '@/lib/hooks/useSession';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -35,6 +36,7 @@ const SIDE_EXTRA = [
   { href: '/offline', label: '오프라인 순회', icon: MapPin },
   { href: '/live', label: 'MD 라이브', icon: Radio },
   { href: '/souvenir-promo', label: '현장 기념품', icon: Gift },
+  { href: '/mentor', label: '멘토 사례 보내기', icon: Users },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

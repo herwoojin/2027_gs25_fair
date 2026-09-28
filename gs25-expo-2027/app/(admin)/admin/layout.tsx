@@ -32,6 +32,7 @@ const MENU: { href: string; label: string; icon: React.ElementType; roles: Role[
   { href: '/admin/reservations', label: '예약·체크인', icon: CalendarCheck, roles: ['admin', 'operator'] },
   { href: '/admin/coupons', label: '쿠폰 발송', icon: Ticket, roles: ['admin'] },
   { href: '/admin/cheers', label: '응원 검수', icon: Heart, roles: ['admin', 'operator'] },
+  { href: '/admin/mentors', label: '멘토 사례 검수', icon: Users, roles: ['admin', 'operator'] },
   { href: '/admin/live', label: '라이브 편성', icon: Radio, roles: ['admin', 'md'] },
   { href: '/admin/content', label: '콘텐츠', icon: LayoutList, roles: ['admin'] },
   { href: '/admin/whitelist', label: '화이트리스트', icon: ShieldCheck, roles: ['admin'] },

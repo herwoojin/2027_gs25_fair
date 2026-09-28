@@ -25,6 +25,7 @@ import type {
   Section,
   Product,
   Souvenir,
+  MentorStory,
 } from '@/types';
 import { SLOTS } from '@/lib/seed/events';
 import { CHEERS, DEMO_STORES, QUESTIONS } from '@/lib/seed/misc';
@@ -146,6 +147,8 @@ interface DB {
   questions: Question[];
   questionLikes: Record<string, string[]>;
   cheers: Cheer[];
+  /** 지역 멘토 경영주 사례 — 공개 전 관리자 검수를 거친다 */
+  mentorStories: MentorStory[];
   reservations: Reservation[];
   slotOverrides: Record<string, { reservedCount: number; checkedInCount: number }>;
   souvenirStock: Record<string, { total: number; given: number }>;
@@ -268,6 +271,7 @@ function seedDb(): DB {
     questions: [...QUESTIONS],
     questionLikes: {},
     cheers: [...CHEERS],
+    mentorStories: [],
     reservations: [],
     slotOverrides: {},
     souvenirStock: {},
@@ -317,6 +321,7 @@ const SHAPE: Record<string, () => unknown> = {
   questions: () => [],
   questionLikes: () => ({}),
   cheers: () => [],
+  mentorStories: () => [],
   reservations: () => [],
   slotOverrides: () => ({}),
   souvenirStock: () => ({}),

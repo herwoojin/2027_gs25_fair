@@ -58,6 +58,9 @@ import type {
   RegionCode,
   Reservation,
   Souvenir,
+  MentorStory,
+  MentorStoryStatus,
+  PublicMentor,
 } from '@/types';
 import { REGION_LABEL } from '@/types';
 import { SECTIONS, SECTION_BY_ID } from '@/lib/seed/sections';
@@ -1069,6 +1072,189 @@ export async function moderateCheer(payload: unknown, ctx: Ctx) {
   return { cheer: c };
 }
 
+
+// ── 지역 멘토 경영주 사례 ────────────────────────────────────────────
+/**
+ * 공개 랜딩에 실명·점포명이 나가는 유일한 사용자 작성 콘텐츠다.
+ * 그래서 다른 글과 다르게 세 가지를 강제한다.
+ *   1) 동의 없이는 저장 자체가 안 된다 (consent 필수)
+ *   2) 관리자가 published 로 바꾸기 전에는 절대 공개되지 않는다
+ *   3) 경영주가 언제든 스스로 내릴 수 있다 (철회권)
+ * 이름 표기 방식도 본인이 고른다 — 실명 / 성만 / 점포명만.
+ */
+
+/** 표시 이름 가공. 공개 응답에는 이 결과만 넣는다(원본 이름은 서버에만 남는다). */
+function mentorLabel(s: MentorStory): string {
+  if (s.displayMode === 'store') return '경영주';
+  const name = s.ownerName.trim();
+  if (s.displayMode === 'masked') {
+    if (name.length <= 1) return name;
+    return name[0] + '○'.repeat(name.length - 1);
+  }
+  return name;
+}
+
+/** 경영주 본인의 사례 (없으면 null) */
+export async function myMentorStory(_payload: unknown, ctx: Ctx) {
+  const caller = requireOwner(readSession(ctx.token));
+  const story = db.mentorStories.find((s) => s.uid === caller.uid) ?? null;
+  return { story };
+}
+
+/** 작성·수정. 이미 공개된 글을 고치면 다시 검수 대기로 돌아간다. */
+export async function submitMentorStory(payload: unknown, ctx: Ctx) {
+  const caller = requireOwner(readSession(ctx.token));
+  const { eventId, takeaway, result, displayMode, consent } = z
+    .object({
+      eventId: z.string().trim().min(1),
+      takeaway: z.string().trim().min(10).max(200),
+      result: z.string().trim().min(5).max(200),
+      displayMode: z.enum(['full', 'masked', 'store']),
+      consent: z.literal(true, {
+        errorMap: () => ({ message: '공개 동의가 있어야 등록할 수 있습니다.' }),
+      }),
+    })
+    .parse(payload);
+
+  if (!EVENT_BY_ID[eventId]) throw new HttpError(400, '지역을 다시 선택해 주세요.', 'bad-event');
+
+  const rate = checkRate(`mentor:${caller.uid}`, 5, 10 * 60000);
+  if (!rate.ok) throw new HttpError(429, '잠시 후 다시 시도해 주세요.', 'rate-limited');
+
+  const banned = containsBanned(`${takeaway} ${result}`);
+  if (banned) throw new HttpError(400, '사용할 수 없는 표현이 포함돼 있습니다.', 'banned-word');
+
+  const store = lookupStore(caller.storeCode);
+  const now = Date.now();
+  const existing = db.mentorStories.find((s) => s.uid === caller.uid);
+
+  const base = {
+    eventId,
+    region: caller.region,
+    ownerName: store?.ownerName ?? db.users[caller.uid]?.displayName ?? '',
+    storeName: store?.storeName ?? '',
+    displayMode,
+    takeaway,
+    result,
+    // 고칠 때마다 다시 검수한다. 승인된 글을 조용히 바꿔치기할 수 없어야 한다.
+    status: 'pending' as const,
+    consentAt: now,
+    updatedAt: now,
+  };
+
+  let story: MentorStory;
+  if (existing) {
+    Object.assign(existing, base, { rejectReason: undefined, reviewedAt: undefined, reviewedBy: undefined });
+    story = existing;
+  } else {
+    story = {
+      id: newId('ms_'),
+      uid: caller.uid,
+      storeCode: caller.storeCode,
+      createdAt: now,
+      ...base,
+    };
+    db.mentorStories.unshift(story);
+  }
+  persist();
+
+  queueSheetRow('MentorStories', [
+    new Date(now).toISOString(),
+    story.storeCode,
+    story.storeName,
+    story.region,
+    story.displayMode,
+    takeaway,
+    result,
+    story.status,
+  ]);
+  audit({ uid: caller.uid, role: caller.role, action: 'mentor.submit', target: story.id, ip: ctx.ip });
+  return { story };
+}
+
+/** 철회 — 즉시 공개에서 내린다. 동의 기록(consentAt)은 증빙이라 지우지 않는다. */
+export async function withdrawMentorStory(_payload: unknown, ctx: Ctx) {
+  const caller = requireOwner(readSession(ctx.token));
+  const story = db.mentorStories.find((s) => s.uid === caller.uid);
+  if (!story) throw new HttpError(404, '등록된 사례가 없습니다.', 'not-found');
+  story.status = 'withdrawn';
+  story.updatedAt = Date.now();
+  persist();
+  audit({ uid: caller.uid, role: caller.role, action: 'mentor.withdraw', target: story.id, ip: ctx.ip });
+  return { story };
+}
+
+/** 관리자 목록 — 검수 대기부터 보여 준다 */
+export async function adminMentorStories(payload: unknown, ctx: Ctx) {
+  requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const { status } = z
+    .object({ status: z.enum(['all', 'pending', 'published', 'rejected', 'withdrawn']).default('all') })
+    .parse(payload ?? {});
+  const order: Record<MentorStoryStatus, number> = { pending: 0, published: 1, rejected: 2, withdrawn: 3 };
+  const rows = db.mentorStories
+    .filter((s) => status === 'all' || s.status === status)
+    .slice()
+    .sort((a, b) => order[a.status] - order[b.status] || b.updatedAt - a.updatedAt);
+  return {
+    rows,
+    counts: {
+      pending: db.mentorStories.filter((s) => s.status === 'pending').length,
+      published: db.mentorStories.filter((s) => s.status === 'published').length,
+      total: db.mentorStories.length,
+    },
+  };
+}
+
+/** 검수 — 공개 / 반려 / 다시 내리기 */
+export async function moderateMentorStory(payload: unknown, ctx: Ctx) {
+  const caller = requireStaff(readSession(ctx.token), ['operator', 'admin']);
+  const { storyId, action, reason } = z
+    .object({
+      storyId: z.string(),
+      action: z.enum(['publish', 'reject', 'unpublish']),
+      reason: z.string().trim().max(200).optional(),
+    })
+    .parse(payload);
+
+  const s = db.mentorStories.find((x) => x.id === storyId);
+  if (!s) throw new HttpError(404, '사례를 찾을 수 없습니다.', 'not-found');
+
+  // 동의 기록이 없으면 어떤 경우에도 공개하지 않는다.
+  if (action === 'publish' && !s.consentAt) {
+    throw new HttpError(400, '공개 동의 기록이 없어 게시할 수 없습니다.', 'no-consent');
+  }
+
+  s.status = action === 'publish' ? 'published' : action === 'reject' ? 'rejected' : 'pending';
+  s.rejectReason = action === 'reject' ? reason : undefined;
+  s.reviewedAt = Date.now();
+  s.reviewedBy = caller.uid;
+  s.updatedAt = Date.now();
+  persist();
+  audit({ uid: caller.uid, role: caller.role, action: `mentor.${action}`, target: storyId, detail: reason });
+  return { story: s };
+}
+
+/** 공개 랜딩용 — published 만, 지역마다 가장 최근 1건 */
+export function publicMentors(): PublicMentor[] {
+  const byEvent = new Map<string, MentorStory>();
+  for (const s of db.mentorStories) {
+    if (s.status !== 'published') continue;
+    const cur = byEvent.get(s.eventId);
+    if (!cur || s.updatedAt > cur.updatedAt) byEvent.set(s.eventId, s);
+  }
+  return EVENTS.filter((e) => byEvent.has(e.id)).map((e) => {
+    const s = byEvent.get(e.id)!;
+    return {
+      eventId: e.id,
+      region: e.city,
+      authorLabel: mentorLabel(s),
+      storeName: s.storeName,
+      takeaway: s.takeaway,
+      result: s.result,
+    };
+  });
+}
+
 // ── 집계 ─────────────────────────────────────────────────────────────
 export async function getAggregates(payload: unknown, ctx: Ctx) {
   readSession(ctx.token);
@@ -1437,6 +1623,8 @@ export async function getPublicHome(_payload: unknown, _ctx: Ctx) {
       order: e.order,
     })),
     souvenirCount: mergedSouvenirs().length,
+    // 승인된 멘토 사례만 나간다. 이름은 이미 표기 방식대로 가공된 상태다.
+    mentors: publicMentors(),
   };
 }
 
@@ -2355,6 +2543,11 @@ export const HANDLERS = {
   createCheer,
   listCheers,
   moderateCheer,
+  myMentorStory,
+  submitMentorStory,
+  withdrawMentorStory,
+  adminMentorStories,
+  moderateMentorStory,
   // aggregates
   getAggregates,
   // ai

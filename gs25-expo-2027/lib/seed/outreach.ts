@@ -28,10 +28,11 @@ export const STRATEGY_HELPERS: StrategyHelper[] = EVENTS.map((e) => ({
 }));
 
 /**
- * 지역 멘토 경영주 — 이전 상품전시회에서 얻어간 내용을 지역에 전한다.
+ * @deprecated 더 이상 화면에 쓰이지 않는다.
  *
- * ⚠️ `ownerName` 과 `takeaway` 는 확정 전 자리표시자다.
- * 실제 후기는 본인 동의를 받아 관리자가 직접 입력해야 한다.
+ * 멘토 사례는 경영주님이 `/mentor` 에서 직접 쓰고, 본인이 공개에 동의하고,
+ * 본부가 승인한 것만 `db.mentorStories` 에서 나간다(`publicMentors()`).
+ * 지어낸 후기를 자리표시자로 띄우던 시절의 잔재라 타입만 남겨 둔다.
  */
 export interface RegionMentor {
   eventId: string;

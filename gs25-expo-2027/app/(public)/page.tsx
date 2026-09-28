@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BellRing, ChevronLeft, ChevronRight, Lock, MapPin, Pause, Play } from 'lucide-react';
-import type { AppConfig, PopupNews as PopupNewsType } from '@/types';
+import type { AppConfig, PopupNews as PopupNewsType, PublicMentor } from '@/types';
 import { callFn, type ApiError } from '@/lib/api';
 import { DEFAULT_CONFIG, SITE } from '@/lib/config';
 import { formatDateTimeKo, formatRange } from '@/lib/utils';
@@ -41,6 +41,7 @@ interface HomeData {
   popup: PopupNewsType | null;
   cities: City[];
   souvenirCount: number;
+  mentors: PublicMentor[];
 }
 
 /** 전체 투어 1회전 길이 */
@@ -406,7 +407,7 @@ export default function LandingPage() {
       <StrategyHelperBlock accent={theme.accent} />
 
       {/* ═══ 지역 멘토 경영주 ═══ */}
-      <MentorBlock accent={theme.accent} />
+      <MentorBlock accent={theme.accent} mentors={data?.mentors ?? []} />
 
       {/* ═══ 기념품 티저 — 사전 알림 바로 위 ═══ */}
       <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />

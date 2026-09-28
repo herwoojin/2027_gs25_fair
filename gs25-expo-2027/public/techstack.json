@@ -275,6 +275,11 @@
           "name": "일정 관리자 로그인 (scheduler)",
           "purpose": "ID/비밀번호로 들어와 순회 일정·장소·주소·시간만 수정한다. 본부 로그인보다 약한 문이라 권한을 좁게 묶었다 — 참가자 명단·쿠폰·화이트리스트·감사 로그 접근 불가. IP 10분 5회 제한 + 상수시간 비교 + 감사 로그.",
           "config": "lib/server/handlers.ts · /admin-schedule · ADMIN_ID / ADMIN_PASSWORD 환경변수로 덮어쓰기"
+        },
+        {
+          "name": "멘토 사례 공개 동의(consentAt)",
+          "purpose": "공개 랜딩에 실명·점포명이 나가는 유일한 사용자 콘텐츠 — 동의 기록 없이는 게시 불가",
+          "config": "lib/server/handlers.ts · moderateMentorStory"
         }
       ]
     },

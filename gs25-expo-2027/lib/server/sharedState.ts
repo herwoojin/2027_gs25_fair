@@ -28,6 +28,7 @@ const SHARED_KEYS = [
   'pullNonces',
   'staffDirectory',
   'staffSyncedAt',
+  'mentorStories',
   'eventOverrides',
   'eventWrites',
   'eventsSyncedAt',
