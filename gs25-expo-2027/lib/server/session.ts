@@ -87,7 +87,12 @@ export function readSession(token: string | null): Caller {
     throw new HttpError(401, '세션이 만료되었습니다. 다시 로그인해 주세요.', 'session-expired');
   }
   const user = db.users[s.uid];
-  if (!user || user.activeSessionKey !== s.sessionKey) {
+  // 사용자 레코드가 **없을** 때는 세션을 건드리지 않는다.
+  // 서버리스라 요청마다 인스턴스가 달라지고, 공유 상태가 아직 안 실렸을 수 있다.
+  // 예전에는 이 경우도 '다른 기기 로그인' 으로 보고 세션을 지웠는데,
+  // 그러면 공유 저장소의 세션까지 사라져 모든 기기가 한꺼번에 튕겼다.
+  // 세션 자체는 서버가 발급했고 만료도 안 됐으므로 그대로 신뢰한다.
+  if (user && user.activeSessionKey !== s.sessionKey) {
     delete db.sessions[token];
     persist();
     throw new HttpError(

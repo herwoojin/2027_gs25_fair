@@ -179,15 +179,21 @@ export function BrandMark({
   const canvas = on === 'canvas';
   return (
     <span className="flex items-center gap-2">
-      <span
-        className={cn(
-          'grid h-9 w-9 place-items-center rounded-xl text-sm font-black',
-          // 캔버스 위에서는 바탕색을 글자색으로, 글자를 바탕색으로 반전시킨다
-          canvas ? 'bg-canvas-ink text-canvas-bg' : 'bg-gs-blue text-white',
-        )}
-      >
-        GS
-      </span>
+      {/*
+        로고 이미지. 파비콘·앱 아이콘과 같은 원본에서 나온다
+        (scripts/make-icons.py 가 한 벌로 만든다) — 한 곳만 바꾸면 전부 따라온다.
+        자체 배경을 가진 정사각 이미지라 낮·밤·종이 모드에서 모두 그대로 쓴다.
+        next/image 를 쓰지 않는 건 36px 짜리 정적 파일이라 최적화할 것이 없어서다.
+      */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/icons/brand-mark.png"
+        alt=""
+        aria-hidden
+        width={36}
+        height={36}
+        className="h-9 w-9 shrink-0 rounded-xl object-cover"
+      />
       <span className="leading-tight">
         <span
           className={cn(

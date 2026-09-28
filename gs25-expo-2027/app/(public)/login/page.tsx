@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Lock, ShieldCheck } from 'lucide-react';
 import type { AppUser } from '@/types';
 import { callFn, type ApiError } from '@/lib/api';
 import { SITE } from '@/lib/config';
@@ -19,6 +19,19 @@ type Step = 'store' | 'last4' | 'otp' | 'consent';
  */
 export default function LoginPage() {
   const router = useRouter();
+  // callFn 이 세션을 잃었을 때 붙여 보내는 값 (lib/api.ts · redirectToLogin).
+  // useSearchParams 를 쓰면 정적 프리렌더에서 Suspense 경계를 요구해 빌드가 막힌다.
+  // 배너 하나 때문에 페이지 구조를 바꿀 일은 아니라 마운트 뒤 주소에서 직접 읽는다.
+  const [reason, setReason] = useState('');
+  useEffect(() => {
+    setReason(new URLSearchParams(window.location.search).get('reason') ?? '');
+  }, []);
+  const kickReason = {
+    unauthenticated: '로그인이 풀려 경영주 로그인 화면으로 돌아왔습니다. 점포코드로 다시 들어와 주세요.',
+    'session-expired': '로그인 후 12시간이 지나 자동으로 로그아웃되었습니다. 다시 로그인해 주세요.',
+    'session-superseded':
+      '다른 기기에서 같은 점포코드로 로그인해 이 기기의 접속이 종료되었습니다. 계속 보시려면 다시 로그인해 주세요.',
+  }[reason];
   const { applySession, refresh } = useSession();
 
   const [step, setStep] = useState<Step>('store');
@@ -126,6 +139,14 @@ export default function LoginPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-8 pt-6">
+        {/* 왜 여기로 왔는지 먼저 알려 준다. 그냥 로그인 화면이 뜨면 튕긴 이유를 알 수 없다. */}
+        {kickReason && (
+          <div className="mb-4 flex gap-2.5 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+            <AlertTriangle size={17} className="mt-0.5 shrink-0" />
+            <span>{kickReason}</span>
+          </div>
+        )}
+
         <div className="mb-8 rounded-2xl bg-gs-blue-light px-4 py-3 text-center">
           <p className="flex items-center justify-center gap-2 text-base font-bold text-gs-blue">
             <Lock size={16} /> 등록된 경영주님만 입장할 수 있습니다

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BellRing, ChevronLeft, ChevronRight, Lock, MapPin, Pause, Play } from 'lucide-react';
+import { ArrowRight, BellRing, ChevronLeft, ChevronRight, Lock, MapPin, Pause, Play, Sparkles } from 'lucide-react';
 import type { AppConfig, PopupNews as PopupNewsType, PublicMentor } from '@/types';
 import { callFn, type ApiError } from '@/lib/api';
 import { DEFAULT_CONFIG, SITE } from '@/lib/config';
@@ -309,6 +309,21 @@ export default function LandingPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/*
+              AI 생성 고지.
+
+              배경 영상은 실제 촬영분이 아니라 AI 로 만든 화면이다. 실제 전시장처럼
+              보이므로 밝히지 않으면 지난 행사 기록으로 오해할 수 있다.
+              화면 맨 아래 오른쪽은 서버 배터리(fixed)와 호스팅 배지가 이미 차지하고 있어,
+              겹치지 않도록 스크러버 바로 위에 오른쪽 정렬로 둔다.
+            */}
+            <p className="mb-2 flex justify-end">
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-black/35 px-3 py-1 text-[0.72rem] font-medium text-white/65 backdrop-blur-sm">
+                <Sparkles size={12} aria-hidden />
+                배경 영상은 AI로 생성된 화면입니다
+              </span>
+            </p>
 
             {/* 스크러버 */}
             <div className="flex items-center gap-3">

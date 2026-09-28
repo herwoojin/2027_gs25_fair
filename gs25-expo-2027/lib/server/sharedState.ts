@@ -24,6 +24,16 @@ if (typeof window !== 'undefined') {
 const SHARED_KEYS = [
   'otpSessions',
   'sessions',
+  // users 는 sessions 와 **반드시 같이** 공유돼야 한다.
+  // readSession 이 users[uid].activeSessionKey 로 세션을 검증하는데, 이쪽만 빠지면
+  // 다른 인스턴스에서 "사용자 없음 → 다른 기기 로그인" 으로 오판해 세션을 지워 버린다.
+  // 그 순간 모든 기기가 401 로 튕긴다.
+  'users',
+  // 아래 셋도 인스턴스마다 따로 놀면 사용자가 손해를 본다.
+  // 스탬프가 사라지고, 예약이 없어진 것처럼 보인다.
+  'progress',
+  'reservations',
+  'slotOverrides',
   'mailQueue',
   'pullNonces',
   'staffDirectory',

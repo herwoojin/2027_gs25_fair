@@ -91,8 +91,28 @@ export async function callFn<T = unknown>(
       (err.code === 'unauthenticated' || err.code === 'session-expired' || err.code === 'session-superseded')
     ) {
       setToken(null);
+      // 로그인이 두 종류(경영주 · 본부)라 "로그인이 필요합니다" 만으로는
+      // 어느 쪽인지 알 수 없다. 지금 보고 있는 화면으로 판단해 그 로그인으로 보낸다.
+      redirectToLogin(err.code);
     }
     throw err;
   }
   return body!.result as T;
+}
+
+/**
+ * 세션이 끊겼을 때 맞는 로그인 화면으로 보낸다.
+ *
+ * /admin · /staff 는 본부 로그인, 나머지는 경영주 로그인이다.
+ * 돌아올 자리를 next 로 남겨 두고, 왜 튕겼는지도 함께 넘긴다.
+ * 이미 로그인 화면이면 아무것도 하지 않는다(무한 이동 방지).
+ */
+function redirectToLogin(code: string) {
+  if (typeof window === 'undefined') return;
+  const path = window.location.pathname;
+  if (path.startsWith('/login') || path.startsWith('/staff/login')) return;
+
+  const target = path.startsWith('/admin') || path.startsWith('/staff') ? '/staff/login' : '/login';
+  const next = encodeURIComponent(path + window.location.search);
+  window.location.replace(`${target}?reason=${code}&next=${next}`);
 }

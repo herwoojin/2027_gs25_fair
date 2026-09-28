@@ -33,7 +33,11 @@ export function AfterEventBlock({ accent }: { accent: string }) {
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
-      e.preventDefault();
+      // preventDefault() 를 부르지 않는다.
+      // 부르면 브라우저 기본 설치 안내가 사라지는데, 우리 버튼은 이 섹션을 펼쳐야
+      // 보이므로 접어 둔 분들은 설치할 길이 아예 없어진다. 콘솔에도
+      // "Banner not shown: preventDefault() called" 가 계속 남는다.
+      // 이벤트는 막지 않아도 그대로 보관해 뒀다가 쓸 수 있다 — 둘 다 챙긴다.
       setInstaller(e as InstallPrompt);
     };
     const onInstalled = () => {
@@ -50,9 +54,14 @@ export function AfterEventBlock({ accent }: { accent: string }) {
 
   const install = async () => {
     if (!installer) return;
-    await installer.prompt();
-    const { outcome } = await installer.userChoice;
-    if (outcome === 'accepted') setInstalled(true);
+    try {
+      await installer.prompt();
+      const { outcome } = await installer.userChoice;
+      if (outcome === 'accepted') setInstalled(true);
+    } catch {
+      // 브라우저가 이미 자체 안내로 처리한 뒤면 prompt() 가 거부된다.
+      // 그 경우 사용자는 이미 설치 여부를 답한 상태라 그대로 넘어가면 된다.
+    }
     setInstaller(null);
   };
 
