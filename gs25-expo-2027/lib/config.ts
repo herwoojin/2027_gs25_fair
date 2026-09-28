@@ -12,11 +12,11 @@ export const DEFAULT_CONFIG: AppConfig = {
   // 온라인 오픈.
   // 기본값은 "이미 오픈된" 상태여서 랜딩의 [입장하기]가 바로 동작한다.
   // 프리오픈(카운트다운 + 입장 비활성) 화면을 보려면 NEXT_PUBLIC_OPEN_AT 을 미래 일시로 바꾼다.
-  openAt: iso(process.env.NEXT_PUBLIC_OPEN_AT ?? '2026-09-19T09:00:00+09:00'),
-  // 순회 시작 D-day
-  tourStartAt: iso(process.env.NEXT_PUBLIC_TOUR_START_AT ?? '2026-10-05T10:00:00+09:00'),
-  // 온라인 마감 (순회 종료 +7일)
-  closeAt: iso(process.env.NEXT_PUBLIC_CLOSE_AT ?? '2026-11-16T23:59:59+09:00'),
+  openAt: iso(process.env.NEXT_PUBLIC_OPEN_AT ?? '2027-03-10T09:00:00+09:00'),
+  // 순회 시작 D-day — 1회차 3/26(금). 전년도와 같은 '3월 넷째 금요일부터 3주 연속' 구조다.
+  tourStartAt: iso(process.env.NEXT_PUBLIC_TOUR_START_AT ?? '2027-03-26T10:00:00+09:00'),
+  // 온라인 마감 (순회 종료 4/10 +7일)
+  closeAt: iso(process.env.NEXT_PUBLIC_CLOSE_AT ?? '2027-04-17T23:59:59+09:00'),
 };
 
 /** 데모/로컬 모드 여부 — Firebase 설정이 없으면 시드 데이터로 동작한다. */
