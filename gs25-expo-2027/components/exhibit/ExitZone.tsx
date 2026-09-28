@@ -100,7 +100,7 @@ export function ExitZone() {
                   <Link
                     href={`/zone/${s.slug}`}
                     className={`flex min-h-touch items-center gap-3 rounded-xl px-3 py-2 transition ${
-                      done ? 'bg-gs-surface text-gs-muted' : 'bg-white hover:bg-gs-blue-light'
+                      done ? 'bg-gs-surface text-gs-muted' : 'bg-gs-card hover:bg-gs-blue-light'
                     }`}
                   >
                     <span

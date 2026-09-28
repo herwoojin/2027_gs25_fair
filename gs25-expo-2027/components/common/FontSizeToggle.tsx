@@ -14,7 +14,7 @@ export function FontSizeToggle({ className }: { className?: string }) {
   const { fontScale, setFontScale } = useSession();
   return (
     <div
-      className={cn('flex items-center gap-1 rounded-pill border border-gs-line bg-white p-1', className)}
+      className={cn('flex items-center gap-1 rounded-pill border border-gs-line bg-gs-card p-1', className)}
       role="group"
       aria-label="글자 크기"
     >

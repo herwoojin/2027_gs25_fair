@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Providers } from './providers';
 import { ServerBattery } from '@/components/common/ServerBattery';
+import { THEME_BOOTSTRAP_SCRIPT } from '@/lib/hooks/useTheme';
 
 export const metadata: Metadata = {
   title: '2027 GS25 상품전략공유회',
@@ -35,6 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // 앱이 만든 마크업이 아니므로 최상위 두 요소에서만 경고를 억제한다.
     // (하위 컴포넌트의 실제 불일치는 그대로 잡힌다)
     <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* 보기 모드를 첫 페인트 전에 적용한다 — 흰 화면이 번쩍이지 않게 */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+      </head>
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
         <ServerBattery />

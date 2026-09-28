@@ -98,7 +98,7 @@ export default function LobbyPage() {
       </div>
 
       {/* 씬 */}
-      <div className="mt-3 overflow-hidden rounded-card border border-gs-line bg-white shadow-card">
+      <div className="mt-3 overflow-hidden rounded-card border border-gs-line bg-gs-card shadow-card">
         {view === 'list' ? (
           <SectionList sections={sections} stamps={stamps} counts={data?.productCounts ?? {}} />
         ) : (

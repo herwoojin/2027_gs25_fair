@@ -111,7 +111,7 @@ export function MediaPlayer({
               setMuted(false);
               if (mediaRef.current) mediaRef.current.muted = false;
             }}
-            className="absolute inset-x-0 bottom-16 mx-auto flex w-max items-center gap-2 rounded-pill bg-white px-5 py-3 text-base font-bold text-gs-ink shadow-lift"
+            className="absolute inset-x-0 bottom-16 mx-auto flex w-max items-center gap-2 rounded-pill bg-gs-card px-5 py-3 text-base font-bold text-gs-ink shadow-lift"
           >
             <VolumeX size={20} /> 탭하여 소리 켜기
           </button>

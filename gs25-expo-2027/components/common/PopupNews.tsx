@@ -43,7 +43,7 @@ export function PopupNews({ popup }: { popup: PopupNewsType | null }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="popup-title"
-            className="w-full max-w-md overflow-hidden rounded-t-3xl bg-white shadow-lift sm:rounded-3xl"
+            className="w-full max-w-md overflow-hidden rounded-t-3xl bg-gs-card shadow-lift sm:rounded-3xl"
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 30, opacity: 0 }}

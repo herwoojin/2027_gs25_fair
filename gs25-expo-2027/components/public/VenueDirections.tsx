@@ -87,7 +87,7 @@ function MapDialog({
       onClick={onClose}
     >
       <div
-        className="flex h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl bg-white sm:h-[86dvh] sm:rounded-2xl"
+        className="flex h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl bg-gs-card sm:h-[86dvh] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-center gap-3 border-b border-gs-line px-4 py-3">
@@ -173,7 +173,7 @@ export function VenueDirections({ event }: { event: ExpoEvent }) {
   };
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-gs-line bg-white">
+    <section className="overflow-hidden rounded-2xl border border-gs-line bg-gs-card">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gs-line px-5 py-4">
         <div>
           <h3 className="text-lg font-bold text-gs-ink">오시는 길</h3>

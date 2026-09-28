@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { ToastProvider } from '@/components/common/Toast';
 import { Watermark } from '@/components/common/Watermark';
 import { BrandMark } from '@/components/common/AppShell';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 
 const MENU: { href: string; label: string; icon: React.ElementType; roles: Role[] }[] = [
   { href: '/admin/dashboard', label: '대시보드', icon: BarChart3, roles: ['admin', 'md', 'operator'] },
@@ -61,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="min-h-dvh bg-gs-surface">
         <Watermark />
 
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-gs-line bg-white lg:flex">
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-gs-line bg-gs-card lg:flex">
           <div className="px-4 py-4">
             <BrandMark compact />
             <p className="mt-1 text-xs font-bold text-gs-mint-dark">관리자</p>
@@ -92,22 +93,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <LogOut size={16} /> 로그아웃
             </button>
+            <div className="mt-2 flex items-center gap-2 px-2">
+              <ThemeToggle />
+              <span className="text-xs text-gs-muted">보기 모드</span>
+            </div>
           </div>
         </aside>
 
         {/* 모바일 상단 메뉴 (MD·운영자는 현장에서 폰으로 사용) */}
-        <header className="sticky top-0 z-30 border-b border-gs-line bg-white lg:hidden">
+        <header className="sticky top-0 z-30 border-b border-gs-line bg-gs-card lg:hidden">
           <div className="flex items-center justify-between px-4 py-2">
             <BrandMark compact />
-            <button
-              className="text-sm font-semibold text-gs-muted"
-              onClick={async () => {
-                await signOut();
-                router.push('/staff/login');
-              }}
-            >
-              로그아웃
-            </button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                className="text-sm font-semibold text-gs-muted"
+                onClick={async () => {
+                  await signOut();
+                  router.push('/staff/login');
+                }}
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
           <nav className="flex gap-1 overflow-x-auto px-3 pb-2">
             {menu.map((m) => (

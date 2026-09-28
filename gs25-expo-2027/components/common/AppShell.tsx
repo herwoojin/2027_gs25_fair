@@ -15,6 +15,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useSession } from '@/lib/hooks/useSession';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { FontSizeToggle } from './FontSizeToggle';
 import { Watermark } from './Watermark';
@@ -57,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* 사이드바: 1024px 이상 */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-gs-line bg-white lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r border-gs-line bg-gs-card lg:flex">
         <Link href="/lobby" className="flex items-center gap-2 px-5 py-5">
           <BrandMark />
         </Link>
@@ -98,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* 상단바: 모바일·태블릿 */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-gs-line bg-white/95 px-4 py-2 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-gs-line bg-gs-card/95 px-4 py-2 backdrop-blur lg:hidden">
         <Link href="/lobby" className="flex items-center gap-2">
           <BrandMark compact />
         </Link>
@@ -108,6 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {progress?.stampCount ?? 0}/11
           </span>
           <FontSizeToggle />
+          <ThemeToggle />
         </div>
       </header>
 
@@ -128,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* 하단 탭바: 1024px 미만 */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-gs-line bg-white/98 backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-gs-line bg-gs-card/98 backdrop-blur lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <ul className="mx-auto flex max-w-3xl">
@@ -156,15 +158,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function BrandMark({ compact = false }: { compact?: boolean }) {
+/**
+ * 로고.
+ *
+ * `on` 은 이 로고가 놓인 바탕이다.
+ *   app    — 흰/카드 배경 (기본). gs-ink 로 쓴다.
+ *   canvas — 랜딩 캔버스. 낮/밤/종이 모드에 따라 바탕이 통째로 뒤집히므로
+ *            글자도 canvas-ink 로 따라 뒤집는다. 예전에는 여기서도 gs-ink 를 써서
+ *            어두운 랜딩 푸터에서 글자가 배경에 묻혀 보이지 않았다.
+ */
+export function BrandMark({
+  compact = false,
+  on = 'app',
+}: {
+  compact?: boolean;
+  on?: 'app' | 'canvas';
+}) {
+  const canvas = on === 'canvas';
   return (
     <span className="flex items-center gap-2">
-      <span className="grid h-9 w-9 place-items-center rounded-xl bg-gs-blue text-sm font-black text-white">
+      <span
+        className={cn(
+          'grid h-9 w-9 place-items-center rounded-xl text-sm font-black',
+          // 캔버스 위에서는 바탕색을 글자색으로, 글자를 바탕색으로 반전시킨다
+          canvas ? 'bg-canvas-ink text-canvas-bg' : 'bg-gs-blue text-white',
+        )}
+      >
         GS
       </span>
       <span className="leading-tight">
-        <span className="block text-[0.7rem] font-bold tracking-wide text-gs-mint-dark">2027</span>
-        <span className={cn('block font-bold text-gs-ink', compact ? 'text-sm' : 'text-base')}>
+        <span
+          className={cn(
+            'block text-[0.7rem] font-bold tracking-wide',
+            canvas ? 'text-canvas-ink/70' : 'text-gs-mint-dark',
+          )}
+        >
+          2027
+        </span>
+        <span
+          className={cn(
+            'block font-bold',
+            canvas ? 'text-canvas-ink' : 'text-gs-ink',
+            compact ? 'text-sm' : 'text-base',
+          )}
+        >
           상품전략공유회
         </span>
       </span>

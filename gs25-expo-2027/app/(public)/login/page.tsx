@@ -116,7 +116,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
+    <div className="flex min-h-dvh flex-col bg-gs-card">
       <header className="flex items-center justify-between px-4 py-3">
         <Link href="/" className="flex min-h-touch items-center gap-2 text-gs-muted">
           <ArrowLeft size={20} /> <span className="sr-only">처음으로</span>

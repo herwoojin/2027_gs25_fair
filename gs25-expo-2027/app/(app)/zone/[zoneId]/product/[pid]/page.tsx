@@ -101,7 +101,7 @@ export default function ProductPage({ params }: { params: { zoneId: string; pid:
       <div className="mb-3 flex items-center justify-between gap-2">
         <Link
           href={`/zone/${section.slug}`}
-          className="flex min-h-touch items-center gap-1 rounded-pill px-2 text-sm font-semibold text-gs-muted hover:bg-white"
+          className="flex min-h-touch items-center gap-1 rounded-pill px-2 text-sm font-semibold text-gs-muted hover:bg-gs-surface"
         >
           <ArrowLeft size={18} /> {section.title}
         </Link>

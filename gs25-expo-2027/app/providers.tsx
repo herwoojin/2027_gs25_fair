@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MotionConfig } from 'framer-motion';
 import { SessionProvider } from '@/lib/hooks/useSession';
+import { ThemeProvider } from '@/lib/hooks/useTheme';
+import { ThemePickerPopup } from '@/components/common/ThemePickerPopup';
 import { initAppCheck } from '@/lib/appCheck';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -33,7 +35,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         하이드레이션(실제값)이 어긋나 React #418/#423 이 발생하므로 쓰지 않는다.
       */}
       <MotionConfig reducedMotion="user">
-        <SessionProvider>{children}</SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>{children}</SessionProvider>
+          {/* 저장된 선택이 없을 때만 뜬다 (하루에 한 번) */}
+          <ThemePickerPopup />
+        </ThemeProvider>
       </MotionConfig>
     </QueryClientProvider>
   );

@@ -125,7 +125,7 @@ export default function SchedulerPage() {
   if (!token) {
     return (
       <div className="grid min-h-dvh place-items-center bg-gs-surface px-5">
-        <form onSubmit={signIn} className="w-full max-w-sm rounded-2xl border border-gs-line bg-white p-6">
+        <form onSubmit={signIn} className="w-full max-w-sm rounded-2xl border border-gs-line bg-gs-card p-6">
           <p className="flex items-center gap-2 text-lg font-bold text-gs-ink">
             <Lock size={18} className="text-gs-blue" /> 일정 관리자 로그인
           </p>
@@ -195,7 +195,7 @@ export default function SchedulerPage() {
             <button
               type="button"
               onClick={() => token && load(token)}
-              className="flex min-h-touch items-center gap-1.5 rounded-pill border border-gs-line bg-white px-3.5 text-sm font-semibold text-gs-ink"
+              className="flex min-h-touch items-center gap-1.5 rounded-pill border border-gs-line bg-gs-card px-3.5 text-sm font-semibold text-gs-ink"
             >
               <RefreshCw size={15} /> 새로고침
             </button>
@@ -205,7 +205,7 @@ export default function SchedulerPage() {
                 safeStorage.set(TOKEN_KEY, '');
                 setToken(null);
               }}
-              className="flex min-h-touch items-center rounded-pill border border-gs-line bg-white px-3.5 text-sm font-semibold text-gs-muted"
+              className="flex min-h-touch items-center rounded-pill border border-gs-line bg-gs-card px-3.5 text-sm font-semibold text-gs-muted"
             >
               로그아웃
             </button>
@@ -213,7 +213,7 @@ export default function SchedulerPage() {
         </header>
 
         {status && (
-          <p className="mt-4 rounded-xl border border-gs-line bg-white px-4 py-3 text-sm text-gs-muted">
+          <p className="mt-4 rounded-xl border border-gs-line bg-gs-card px-4 py-3 text-sm text-gs-muted">
             시트 동기화{' '}
             {status.syncedAgoSec === null ? (
               <b className="text-gs-ink">아직 없음</b>
@@ -240,7 +240,7 @@ export default function SchedulerPage() {
             const set = (k: keyof typeof d, v: string) =>
               setDraft((cur) => ({ ...cur, [e.id]: { ...cur[e.id], [k]: v } }));
             return (
-              <li key={e.id} className="rounded-2xl border border-gs-line bg-white p-5">
+              <li key={e.id} className="rounded-2xl border border-gs-line bg-gs-card p-5">
                 <p className="flex items-center gap-2 text-lg font-bold text-gs-ink">
                   <span className="grid h-7 w-7 place-items-center rounded-lg bg-gs-blue-light text-sm font-black text-gs-blue">
                     {e.order}

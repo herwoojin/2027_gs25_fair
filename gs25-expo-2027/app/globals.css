@@ -15,10 +15,53 @@
     --gs-muted: 98 116 141;
     --gs-line: 224 231 240;
     --gs-surface: 247 250 254;
+    --gs-bg: 255 255 255;
+    --gs-card-bg: 255 255 255;
+
+    /* 랜딩 캔버스 — 시네마틱 배경과 그 위의 글자.
+       모드에 따라 통째로 뒤집히므로, 랜딩은 white 대신 canvas-ink 를 쓴다. */
+    --canvas-bg: 247 250 254;
+    --canvas-ink: 14 26 48;
 
     --font-scale: 1;
     --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
       'Malgun Gothic', system-ui, sans-serif;
+  }
+
+  /* ── 어두운 모드 ── */
+  [data-theme='dark'] {
+    --gs-blue: 77 148 224;
+    --gs-blue-dark: 50 118 200;
+    --gs-blue-light: 20 40 70;
+    --gs-mint: 0 210 185;
+    --gs-mint-dark: 0 180 155;
+    --gs-sand: 50 40 25;
+    --gs-ink: 230 237 245;
+    --gs-muted: 140 158 180;
+    --gs-line: 35 52 78;
+    --gs-surface: 18 30 50;
+    --gs-bg: 10 18 32;
+    --gs-card-bg: 15 25 42;
+    --canvas-bg: 5 10 24;
+    --canvas-ink: 255 255 255;
+  }
+
+  /* ── 편안한 모드 (세피아/종이 느낌) ── */
+  [data-theme='paper'] {
+    --gs-blue: 30 80 140;
+    --gs-blue-dark: 20 58 110;
+    --gs-blue-light: 235 225 205;
+    --gs-mint: 80 150 120;
+    --gs-mint-dark: 60 120 95;
+    --gs-sand: 245 238 220;
+    --gs-ink: 59 47 30;
+    --gs-muted: 120 108 88;
+    --gs-line: 210 198 175;
+    --gs-surface: 240 233 218;
+    --gs-bg: 245 239 224;
+    --gs-card-bg: 250 245 232;
+    --canvas-bg: 238 229 208;
+    --canvas-ink: 59 47 30;
   }
 
   html {
@@ -28,9 +71,11 @@
   }
 
   body {
-    @apply bg-white text-gs-ink antialiased;
+    background: rgb(var(--gs-bg));
+    @apply text-gs-ink antialiased;
     font-family: var(--font-sans);
     overscroll-behavior-y: none;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 
   /* 터치 영역 최소 44px */
@@ -60,7 +105,7 @@
 
 @layer components {
   .gs-card {
-    @apply rounded-card border border-gs-line bg-white shadow-card;
+    @apply rounded-card border border-gs-line bg-gs-card shadow-card;
   }
 
   .gs-btn {
@@ -76,15 +121,15 @@
   }
 
   .gs-btn-ghost {
-    @apply gs-btn border border-gs-line bg-white text-gs-ink hover:bg-gs-surface;
+    @apply gs-btn border border-gs-line bg-gs-card text-gs-ink hover:bg-gs-surface;
   }
 
   .gs-input {
-    @apply min-h-touch w-full rounded-xl border-2 border-gs-line bg-white px-4 text-lg outline-none transition placeholder:text-gs-muted/60 focus:border-gs-blue;
+    @apply min-h-touch w-full rounded-xl border-2 border-gs-line bg-gs-card px-4 text-lg outline-none transition placeholder:text-gs-muted/60 focus:border-gs-blue;
   }
 
   .gs-chip {
-    @apply inline-flex min-h-[2.25rem] items-center gap-1 rounded-pill border border-gs-line bg-white px-3 text-sm font-medium text-gs-muted transition;
+    @apply inline-flex min-h-[2.25rem] items-center gap-1 rounded-pill border border-gs-line bg-gs-card px-3 text-sm font-medium text-gs-muted transition;
   }
 
   .gs-chip-on {

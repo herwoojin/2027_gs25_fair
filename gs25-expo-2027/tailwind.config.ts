@@ -12,6 +12,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // 랜딩 캔버스 — 모드에 따라 배경/글자가 통째로 뒤집힌다
+        canvas: {
+          bg: 'rgb(var(--canvas-bg) / <alpha-value>)',
+          ink: 'rgb(var(--canvas-ink) / <alpha-value>)',
+        },
         gs: {
           blue: 'rgb(var(--gs-blue) / <alpha-value>)',
           'blue-dark': 'rgb(var(--gs-blue-dark) / <alpha-value>)',
@@ -20,6 +25,8 @@ const config: Config = {
           'mint-dark': 'rgb(var(--gs-mint-dark) / <alpha-value>)',
           sand: 'rgb(var(--gs-sand) / <alpha-value>)',
           ink: 'rgb(var(--gs-ink) / <alpha-value>)',
+          card: 'rgb(var(--gs-card-bg) / <alpha-value>)',
+          bg: 'rgb(var(--gs-bg) / <alpha-value>)',
           muted: 'rgb(var(--gs-muted) / <alpha-value>)',
           line: 'rgb(var(--gs-line) / <alpha-value>)',
           surface: 'rgb(var(--gs-surface) / <alpha-value>)',

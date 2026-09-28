@@ -87,7 +87,7 @@ export default function StaffLoginPage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-gs-surface">
-      <header className="flex items-center justify-between bg-white px-4 py-3">
+      <header className="flex items-center justify-between bg-gs-card px-4 py-3">
         <Link href="/" className="flex min-h-touch items-center text-gs-muted">
           <ArrowLeft size={20} />
         </Link>

@@ -221,7 +221,7 @@ function ZoneBlock({
         <div className="pointer-events-none select-none whitespace-nowrap">
           <div
             className={`rounded-pill px-2.5 py-1 text-[11px] font-bold shadow-card ${
-              stamped ? 'bg-white/90 text-gs-muted' : 'bg-white text-gs-ink'
+              stamped ? 'bg-white/90 text-gs-muted' : 'bg-gs-card text-gs-ink'
             }`}
           >
             {stamped && <span className="mr-1 text-gs-mint-dark">●</span>}

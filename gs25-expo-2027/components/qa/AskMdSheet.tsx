@@ -63,7 +63,7 @@ export function AskMdSheet({
           <motion.form
             onSubmit={submit}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-lg rounded-t-3xl bg-white p-5 shadow-lift sm:rounded-3xl"
+            className="w-full max-w-lg rounded-t-3xl bg-gs-card p-5 shadow-lift sm:rounded-3xl"
             initial={{ y: 60 }}
             animate={{ y: 0 }}
             exit={{ y: 50 }}

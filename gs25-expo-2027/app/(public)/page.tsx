@@ -18,6 +18,7 @@ import { StrategyHelperBlock } from '@/components/public/StrategyHelperBlock';
 import { MentorBlock } from '@/components/public/MentorBlock';
 import { PopupNews } from '@/components/common/PopupNews';
 import { BrandMark } from '@/components/common/AppShell';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { FilmOverlay } from '@/components/common/FilmOverlay';
 import { CustomCursor } from '@/components/common/CustomCursor';
 import { Reveal, RevealText } from '@/components/common/Reveal';
@@ -144,7 +145,7 @@ export default function LandingPage() {
   const target = opened ? config.tourStartAt : config.openAt;
 
   return (
-    <div className="min-h-dvh bg-[#050a18] text-white">
+    <div className="min-h-dvh bg-canvas-bg text-canvas-ink">
       <PopupNews popup={data?.popup ?? null} />
       <CustomCursor accent={theme.accent} />
 
@@ -175,12 +176,16 @@ export default function LandingPage() {
             </span>
             <span className="text-sm font-bold tracking-wide text-white/85">GS25</span>
           </span>
-          <Link
-            href="/staff/login"
-            className="rounded-pill border border-white/25 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur transition hover:bg-white/10"
-          >
-            본부 로그인
-          </Link>
+          <span className="flex items-center gap-2">
+            <Link
+              href="/staff/login"
+              className="rounded-pill border border-white/25 px-4 py-2 text-sm font-semibold text-white/85 backdrop-blur transition hover:bg-white/10"
+            >
+              본부 로그인
+            </Link>
+            {/* 히어로는 영상 위라 모드와 무관하게 어둡다 — onDark 톤을 쓴다 */}
+            <ThemeToggle tone="onDark" />
+          </span>
         </header>
 
         {/* 타이틀 */}
@@ -409,13 +414,18 @@ export default function LandingPage() {
       {/* ═══ 사전 알림 ═══ */}
       <PreNotifyForm accent={theme.accent} />
 
-      <footer className="border-t border-white/10 px-5 py-10 text-center text-sm text-white/45">
+      <footer className="border-t border-canvas-ink/10 px-5 py-10 text-center text-sm text-canvas-ink/45">
         <div className="mx-auto max-w-3xl space-y-2">
-          <div className="flex justify-center opacity-80">
-            <BrandMark />
+          <div className="flex justify-center">
+            <BrandMark on="canvas" />
           </div>
           <p>본 사이트는 사전 등록된 GS25 경영주 전용입니다. 화면 캡처 및 외부 공유는 금지됩니다.</p>
           <p>번호가 바뀌셨나요? 담당 OFC 또는 {SITE.ofcPhone} 로 문의해 주세요.</p>
+          <p className="pt-2">
+            <Link href="/sitemap" className="font-semibold underline underline-offset-4 hover:text-canvas-ink/80">
+              사이트맵
+            </Link>
+          </p>
         </div>
       </footer>
     </div>
@@ -469,7 +479,7 @@ function CityLine({
             TOUR
           </p>
           <h2 className="text-3xl font-black sm:text-4xl">전국 9개 도시를 순회합니다</h2>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-canvas-ink/60">
             가까운 도시에서 직접 보시고, 온라인에서 한 번 더 확인하세요.
           </p>
         </Reveal>
@@ -505,12 +515,12 @@ function CityLine({
                           {t?.emoji}
                         </span>
                       </p>
-                      <p className="flex items-center gap-1 text-sm text-white/55">
+                      <p className="flex items-center gap-1 text-sm text-canvas-ink/55">
                         <MapPin size={13} />
                         {c ? formatRange(c.startDate, c.endDate) : '일정 준비 중'}
                       </p>
                       {t && (
-                        <p className="mt-1.5 text-sm text-white/45 transition-opacity duration-500 group-hover:text-white/70">
+                        <p className="mt-1.5 text-sm text-canvas-ink/45 transition-opacity duration-500 group-hover:text-canvas-ink/70">
                           {t.tagline}
                         </p>
                       )}
@@ -530,7 +540,7 @@ function CityLine({
         <Reveal delay={0.2}>
           <Link
             href="/offline"
-            className="gs-btn mt-10 border border-white/25 text-white hover:bg-white/10"
+            className="gs-btn mt-10 border border-canvas-ink/25 text-canvas-ink hover:bg-canvas-ink/10"
           >
             순회 일정 자세히 보기 <ArrowRight size={16} />
           </Link>
@@ -543,14 +553,14 @@ function CityLine({
 function SouvenirTeaser({ count, accent }: { count: number; accent: string }) {
   const items = useMemo(() => Array.from({ length: count }, (_, i) => i), [count]);
   return (
-    <section className="relative overflow-hidden border-y border-white/10 px-5 py-20">
+    <section className="relative overflow-hidden border-y border-canvas-ink/10 px-5 py-20">
       <div className="mx-auto max-w-5xl">
         <Reveal>
           <p className="text-sm font-bold tracking-widest" style={{ color: accent }}>
             SOUVENIR
           </p>
           <h2 className="mt-2 text-3xl font-black sm:text-4xl">무엇이 들어 있을까요?</h2>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-canvas-ink/60">
             {count}가지 기념품을 준비했습니다. 온라인 스탬프를 모으면 힌트가 하나씩 열립니다.
           </p>
         </Reveal>
@@ -559,11 +569,11 @@ function SouvenirTeaser({ count, accent }: { count: number; accent: string }) {
           {items.map((i) => (
             <Reveal key={i} delay={i * 0.08}>
               <motion.div
-                className="grid aspect-square place-items-center rounded-2xl border border-white/12 bg-white/[0.04]"
+                className="grid aspect-square place-items-center rounded-2xl border border-canvas-ink/12 bg-canvas-ink/[0.04]"
                 animate={{ y: [0, -9, 0] }}
                 transition={{ duration: 3.2, repeat: Infinity, delay: i * 0.35, ease: 'easeInOut' }}
               >
-                <span className="text-2xl font-black text-white/25 sm:text-4xl">?</span>
+                <span className="text-2xl font-black text-canvas-ink/25 sm:text-4xl">?</span>
               </motion.div>
             </Reveal>
           ))}
@@ -608,28 +618,28 @@ function PreNotifyForm({ accent }: { accent: string }) {
             NOTIFY ME
           </p>
           <h2 className="mt-2 text-3xl font-black">사전 알림 받기</h2>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-canvas-ink/60">
             오픈 D-7, D-1, 오픈 당일과 우리 지역 행사 3일 전에 문자로 알려 드립니다.
           </p>
         </Reveal>
 
         <Reveal delay={0.1}>
           {done ? (
-            <div className="mt-8 rounded-card border border-white/12 bg-white/[0.04] p-6 text-center">
+            <div className="mt-8 rounded-card border border-canvas-ink/12 bg-canvas-ink/[0.04] p-6 text-center">
               <p className="text-lg font-bold" style={{ color: accent }}>
                 신청이 접수되었습니다
               </p>
-              <p className="mt-2 text-white/60">등록하신 번호로 안내 문자를 보내 드리겠습니다.</p>
+              <p className="mt-2 text-canvas-ink/60">등록하신 번호로 안내 문자를 보내 드리겠습니다.</p>
             </div>
           ) : (
             <form
               onSubmit={submit}
-              className="mt-8 space-y-4 rounded-card border border-white/12 bg-white/[0.04] p-5"
+              className="mt-8 space-y-4 rounded-card border border-canvas-ink/12 bg-canvas-ink/[0.04] p-5"
             >
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-white/80">점포코드</span>
+                <span className="mb-1.5 block text-sm font-semibold text-canvas-ink/80">점포코드</span>
                 <input
-                  className="gs-input border-white/15 bg-white/[0.06] text-white placeholder:text-white/30"
+                  className="gs-input border-canvas-ink/15 bg-canvas-ink/[0.06] text-canvas-ink placeholder:text-canvas-ink/30"
                   inputMode="numeric"
                   autoComplete="off"
                   placeholder="예: 20001"
@@ -639,9 +649,9 @@ function PreNotifyForm({ accent }: { accent: string }) {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-sm font-semibold text-white/80">휴대폰 번호</span>
+                <span className="mb-1.5 block text-sm font-semibold text-canvas-ink/80">휴대폰 번호</span>
                 <input
-                  className="gs-input border-white/15 bg-white/[0.06] text-white placeholder:text-white/30"
+                  className="gs-input border-canvas-ink/15 bg-canvas-ink/[0.06] text-canvas-ink placeholder:text-canvas-ink/30"
                   inputMode="tel"
                   autoComplete="tel"
                   placeholder="01012345678"
@@ -650,7 +660,7 @@ function PreNotifyForm({ accent }: { accent: string }) {
                   required
                 />
               </label>
-              <label className="flex items-start gap-3 rounded-xl bg-white/[0.05] p-3 text-sm">
+              <label className="flex items-start gap-3 rounded-xl bg-canvas-ink/[0.05] p-3 text-sm">
                 <input
                   type="checkbox"
                   className="mt-1 h-5 w-5"
@@ -658,8 +668,8 @@ function PreNotifyForm({ accent }: { accent: string }) {
                   checked={consent}
                   onChange={(e) => setConsent(e.target.checked)}
                 />
-                <span className="text-white/60">
-                  <b className="text-white">[필수]</b> 행사 안내 문자 수신에 동의합니다. 수집한 번호는 행사
+                <span className="text-canvas-ink/60">
+                  <b className="text-canvas-ink">[필수]</b> 행사 안내 문자 수신에 동의합니다. 수집한 번호는 행사
                   종료 후 3개월 내 파기됩니다.
                 </span>
               </label>
@@ -670,7 +680,7 @@ function PreNotifyForm({ accent }: { accent: string }) {
               >
                 {busy ? '신청 중…' : '알림 신청하기'}
               </button>
-              <p className="text-center text-xs text-white/45">
+              <p className="text-center text-xs text-canvas-ink/45">
                 등록된 점포 정보로만 신청하실 수 있습니다.
               </p>
             </form>

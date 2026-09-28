@@ -82,7 +82,7 @@ export default function ZonePage({ params }: { params: { zoneId: string } }) {
       <div className="mb-3 flex items-center gap-2">
         <button
           onClick={() => router.push('/lobby')}
-          className="flex min-h-touch items-center gap-1 rounded-pill px-2 text-sm font-semibold text-gs-muted hover:bg-white"
+          className="flex min-h-touch items-center gap-1 rounded-pill px-2 text-sm font-semibold text-gs-muted hover:bg-gs-surface"
         >
           <ArrowLeft size={18} /> 로비
         </button>
@@ -117,7 +117,7 @@ export default function ZonePage({ params }: { params: { zoneId: string } }) {
 
       {section.type === 'shelf3d' && (
         <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
-          <div className="overflow-hidden rounded-card border border-gs-line bg-white shadow-card">
+          <div className="overflow-hidden rounded-card border border-gs-line bg-gs-card shadow-card">
             <div className="relative h-[46vh] min-h-[300px] sm:h-[54vh]">
               {mode === '3d' ? (
                 <>

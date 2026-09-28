@@ -211,7 +211,7 @@ export function GuideMap({ accent }: { accent: string }) {
   const [active, setActive] = useState<string | null>(null);
 
   return (
-    <section id="guide" className="relative scroll-mt-4 border-y border-white/10 px-5 py-20">
+    <section id="guide" className="relative scroll-mt-4 border-y border-canvas-ink/10 px-5 py-20">
       <div className="mx-auto max-w-6xl">
         <Reveal>
           <p
@@ -225,11 +225,11 @@ export function GuideMap({ accent }: { accent: string }) {
             <br />
             준비하고 있습니다
           </h2>
-          <p className="mt-4 max-w-2xl text-lg text-white/70">
+          <p className="mt-4 max-w-2xl text-lg text-canvas-ink/70">
             11개 존을 순서대로 도는 동선입니다. 자세한 내용은 입장 후 공개되며, 현장에서는 실물과 함께
             보실 수 있습니다.
           </p>
-          <div className="mt-6 flex flex-wrap gap-4 text-sm text-white/60">
+          <div className="mt-6 flex flex-wrap gap-4 text-sm text-canvas-ink/60">
             <span className="inline-flex items-center gap-1.5">
               <Footprints size={15} style={{ color: accent }} /> 11개 존
             </span>
@@ -450,13 +450,13 @@ export function GuideMap({ accent }: { accent: string }) {
         {/* ── 현장으로 잇기 ── */}
         <Reveal delay={0.2}>
           <motion.div
-            className="mt-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-6 sm:flex-row sm:items-center sm:justify-between"
+            className="mt-8 flex flex-col gap-4 rounded-2xl border border-canvas-ink/10 bg-canvas-ink/[0.04] px-6 py-6 sm:flex-row sm:items-center sm:justify-between"
             whileHover={{ y: -2 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
           >
             <div>
-              <p className="text-lg font-bold text-white">현장에서는 실물과 함께 보실 수 있습니다</p>
-              <p className="mt-1 text-white/60">
+              <p className="text-lg font-bold text-canvas-ink">현장에서는 실물과 함께 보실 수 있습니다</p>
+              <p className="mt-1 text-canvas-ink/60">
                 전국 9개 도시를 순회합니다. 가까운 도시의 일정을 확인하고 방문을 예약해 주세요.
               </p>
             </div>
@@ -477,7 +477,7 @@ export function GuideMap({ accent }: { accent: string }) {
               )}
               <a
                 href="#cities"
-                className="gs-btn border border-white/20 text-white/85 transition hover:bg-white/10"
+                className="gs-btn border border-canvas-ink/20 text-canvas-ink/85 transition hover:bg-canvas-ink/10"
               >
                 순회 일정 보기
               </a>

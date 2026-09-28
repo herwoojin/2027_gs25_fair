@@ -87,7 +87,7 @@ export function SectionBot({
             onClick={() => setOpen(false)}
           >
             <motion.div
-              className="flex h-[86dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-white shadow-lift sm:h-[70dvh] sm:rounded-3xl"
+              className="flex h-[86dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl bg-gs-card shadow-lift sm:h-[70dvh] sm:rounded-3xl"
               initial={{ y: 60 }}
               animate={{ y: 0 }}
               exit={{ y: 50 }}
@@ -132,7 +132,7 @@ export function SectionBot({
                             setOpen(false);
                             onAskMd(turns.filter((x) => x.role === 'user').slice(-1)[0]?.text);
                           }}
-                          className="mt-3 flex min-h-[2.25rem] items-center gap-1.5 rounded-pill border border-gs-line bg-white px-3 text-sm font-semibold text-gs-blue"
+                          className="mt-3 flex min-h-[2.25rem] items-center gap-1.5 rounded-pill border border-gs-line bg-gs-card px-3 text-sm font-semibold text-gs-blue"
                         >
                           <MessageSquarePlus size={15} /> MD에게 질문하기
                         </button>

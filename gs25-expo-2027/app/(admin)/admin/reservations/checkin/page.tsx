@@ -206,7 +206,7 @@ export default function CheckInPage() {
           <Check className="mx-auto mb-2 text-gs-mint-dark" size={34} />
           <p className="text-2xl font-bold">{result.storeName}</p>
           {result.engravingText && (
-            <p className="mt-2 rounded-xl bg-white px-4 py-3 text-lg">
+            <p className="mt-2 rounded-xl bg-gs-card px-4 py-3 text-lg">
               각인 문구 <b>{result.engravingText}</b>
             </p>
           )}

@@ -16,7 +16,7 @@ import { SpiralAnimation } from '@/components/ui/spiral-animation';
  */
 export function StrategyHelperBlock({ accent }: { accent: string }) {
   return (
-    <section className="relative overflow-hidden border-t border-white/10 px-5 py-20">
+    <section className="relative overflow-hidden border-t border-canvas-ink/10 px-5 py-20">
       {/*
         배경 — 나선을 그리며 퍼지는 입자. '한 곳에서 전국으로 뻗어 나가는 방송' 을 나타낸다.
         섹션 강조색으로 물들이고, 콘텐츠 뒤에서 옅게만 돌린다.
@@ -45,9 +45,9 @@ export function StrategyHelperBlock({ accent }: { accent: string }) {
             <br />
             <span style={{ color: accent }}>상품전략도우미</span>가 찾아갑니다
           </h2>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-white/70">
-            지정된 시간에 현장에 오지 못하신 경영주님을 위해, <b className="text-white">지역별 상품전략도우미</b>가
-            유튜브 라이브로 접속합니다. 설명만 듣는 자리가 아니라 <b className="text-white">직접 묻고 그 자리에서
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-canvas-ink/70">
+            지정된 시간에 현장에 오지 못하신 경영주님을 위해, <b className="text-canvas-ink">지역별 상품전략도우미</b>가
+            유튜브 라이브로 접속합니다. 설명만 듣는 자리가 아니라 <b className="text-canvas-ink">직접 묻고 그 자리에서
             답을 듣는</b> 시간입니다.
           </p>
         </Reveal>
@@ -65,13 +65,13 @@ export function StrategyHelperBlock({ accent }: { accent: string }) {
             {STRATEGY_HELPERS.map((h) => (
               <li
                 key={h.eventId}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5"
+                className="rounded-2xl border border-canvas-ink/10 bg-canvas-ink/[0.04] px-4 py-3.5"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-white">{h.region}</span>
-                  <span className="text-xs text-white/45">{h.helperName}</span>
+                  <span className="font-bold text-canvas-ink">{h.region}</span>
+                  <span className="text-xs text-canvas-ink/45">{h.helperName}</span>
                 </div>
-                <p className="mt-1 text-sm text-white/60">{h.focus}</p>
+                <p className="mt-1 text-sm text-canvas-ink/60">{h.focus}</p>
                 <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold" style={{ color: accent }}>
                   <Clock size={12} /> {h.airtime}
                 </p>
@@ -82,13 +82,13 @@ export function StrategyHelperBlock({ accent }: { accent: string }) {
 
         <Reveal delay={0.2}>
           <motion.div
-            className="mt-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-6 sm:flex-row sm:items-center sm:justify-between"
+            className="mt-8 flex flex-col gap-4 rounded-2xl border border-canvas-ink/10 bg-canvas-ink/[0.04] px-6 py-6 sm:flex-row sm:items-center sm:justify-between"
             whileHover={{ y: -2 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
           >
             <div>
-              <p className="text-lg font-bold text-white">편성표와 다시보기는 입장 후 확인하실 수 있습니다</p>
-              <p className="mt-1 text-white/60">
+              <p className="text-lg font-bold text-canvas-ink">편성표와 다시보기는 입장 후 확인하실 수 있습니다</p>
+              <p className="mt-1 text-canvas-ink/60">
                 방송 시작 전 알림을 신청해 두시면 시작할 때 문자로 알려 드립니다.
               </p>
             </div>
@@ -114,12 +114,12 @@ function Feature({
   accent: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
-      <span className="inline-flex items-center gap-2 font-bold text-white">
+    <div className="rounded-2xl border border-canvas-ink/10 bg-canvas-ink/[0.03] px-5 py-4">
+      <span className="inline-flex items-center gap-2 font-bold text-canvas-ink">
         <span style={{ color: accent }}>{icon}</span>
         {title}
       </span>
-      <p className="mt-1 text-sm leading-relaxed text-white/60">{body}</p>
+      <p className="mt-1 text-sm leading-relaxed text-canvas-ink/60">{body}</p>
     </div>
   );
 }

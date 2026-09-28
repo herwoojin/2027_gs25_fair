@@ -45,7 +45,7 @@ export default function SouvenirPromoPage() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
-              className="relative aspect-[3/4] overflow-hidden rounded-card border border-gs-line bg-white p-3 shadow-card"
+              className="relative aspect-[3/4] overflow-hidden rounded-card border border-gs-line bg-gs-card p-3 shadow-card"
             >
               {s.soldOut && (
                 <span className="absolute right-2 top-2 rounded-pill bg-state-critical px-2 py-0.5 text-[0.65rem] font-bold text-white">

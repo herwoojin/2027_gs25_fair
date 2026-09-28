@@ -85,7 +85,7 @@ function SouvenirCard({
 
   return (
     <motion.div
-      className="relative aspect-[3/4] overflow-hidden rounded-card border border-gs-line bg-white p-3 shadow-card"
+      className="relative aspect-[3/4] overflow-hidden rounded-card border border-gs-line bg-gs-card p-3 shadow-card"
       animate={item.hintOpen && !item.revealed ? { rotate: [0, -2, 2, -1.5, 0] } : {}}
       transition={{ duration: 0.7, repeat: item.hintOpen && !item.revealed ? Infinity : 0, repeatDelay: 3 }}
     >
