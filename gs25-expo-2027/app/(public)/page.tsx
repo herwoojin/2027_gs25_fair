@@ -16,6 +16,7 @@ import { HeroVideo } from '@/components/public/HeroVideo';
 import { GuideMap } from '@/components/public/GuideMap';
 import { StrategyHelperBlock } from '@/components/public/StrategyHelperBlock';
 import { MentorBlock } from '@/components/public/MentorBlock';
+import { AfterEventBlock } from '@/components/public/AfterEventBlock';
 import { PopupNews } from '@/components/common/PopupNews';
 import { BrandMark } from '@/components/common/AppShell';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -409,6 +410,9 @@ export default function LandingPage() {
       {/* ═══ 지역 멘토 경영주 ═══ */}
       <MentorBlock accent={theme.accent} mentors={data?.mentors ?? []} />
 
+      {/* ═══ 향후 일정 — 접힌 채로 둔다(확정된 게 '4월 중순 이후' 하나뿐) ═══ */}
+      <AfterEventBlock accent={theme.accent} />
+
       {/* ═══ 기념품 티저 — 사전 알림 바로 위 ═══ */}
       <SouvenirTeaser count={data?.souvenirCount ?? 5} accent={theme.accent} />
 
@@ -621,6 +625,8 @@ function PreNotifyForm({ accent }: { accent: string }) {
           <h2 className="mt-2 text-3xl font-black">사전 알림 받기</h2>
           <p className="mt-2 text-canvas-ink/60">
             오픈 D-7, D-1, 오픈 당일과 우리 지역 행사 3일 전에 문자로 알려 드립니다.
+            <br className="hidden sm:block" />
+            공유회가 끝난 뒤 이어지는 <b className="text-canvas-ink/80">영상·교육 일정</b>도 같은 번호로 보내 드립니다.
           </p>
         </Reveal>
 
