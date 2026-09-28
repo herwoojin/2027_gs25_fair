@@ -12,7 +12,7 @@
  *    그래서 문서는 항상 네트워크로 가고, 끊겼을 때만 오프라인 안내를 보여 준다.
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2'; // 로고 교체 — 캐시된 옛 아이콘을 버린다
 const SHELL = `gs25-shell-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 

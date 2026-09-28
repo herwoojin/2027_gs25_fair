@@ -5,7 +5,7 @@
 원본 이미지 하나로 앱 아이콘 · 파비콘 · 화면 로고까지 전부 만든다.
 로고를 바꿀 때 파일을 여러 개 손대다 하나를 빠뜨리는 일을 막으려고 스크립트로 둔다.
 
-    python3 scripts/make-icons.py <원본이미지>
+    python3 scripts/make-icons.py assets/brand/logo-source.png
 
 만드는 것 (public/icons/)
     icon-192.png           안드로이드 · 매니페스트
@@ -15,7 +15,8 @@
     favicon-32.png         브라우저 탭
     brand-mark.png         화면 안 로고 (BrandMark 컴포넌트가 읽는다)
 
-원본 조건: 정사각형 권장, 512px 이상, PNG.
+원본은 assets/brand/logo-source.png 에 함께 넣어 둔다 — 나중에 다시 만들 수 있어야 한다.
+원본 조건: 512px 이상 PNG. 흰 여백과 라운드 모서리는 알아서 걷어낸다.
 """
 import sys
 from pathlib import Path
@@ -44,6 +45,43 @@ def trim_border(img: Image.Image) -> Image.Image:
 
     box = ImageChops.difference(rgb, diff).convert('L').point(lambda p: 255 if p > 12 else 0).getbbox()
     return img.crop(box) if box else img
+
+
+def clear_corners(img: Image.Image, tol: int = 22) -> Image.Image:
+    """
+    네 모서리의 흰 여백을 투명하게 만든다.
+
+    로고가 라운드 사각형이면 모서리에 흰 삼각형이 남는데, 어두운 모드나
+    둥근 마스크 위에서 흰 조각으로 비친다. 모서리에서부터 번져 나가며
+    비슷한 색만 지운다(가운데 흰 글자·흰 면은 건드리지 않는다).
+    """
+    img = img.convert('RGBA')
+    w, h = img.size
+    px = img.load()
+    base = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
+    # 모서리가 이미 투명하거나 흰색이 아니면 할 일이 없다
+    if not any(c[3] > 0 and min(c[:3]) > 225 for c in base):
+        return img
+
+    seen = bytearray(w * h)
+    stack = [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]
+    while stack:
+        x, y = stack.pop()
+        if x < 0 or y < 0 or x >= w or y >= h:
+            continue
+        i = y * w + x
+        if seen[i]:
+            continue
+        seen[i] = 1
+        r, g, b, a = px[x, y]
+        if a == 0:
+            stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+            continue
+        if min(r, g, b) < 255 - tol:
+            continue  # 로고 색을 만났다 — 여기서 멈춘다
+        px[x, y] = (r, g, b, 0)
+        stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+    return img
 
 
 def square(img: Image.Image) -> Image.Image:
@@ -78,7 +116,7 @@ def main() -> int:
     if min(src.size) < 256:
         print(f'⚠️  원본이 작습니다({src.width}x{src.height}). 512px 이상을 권장합니다.')
 
-    logo = square(trim_border(src))
+    logo = square(clear_corners(trim_border(src)))
     bg = dominant_edge_color(logo)
     OUT.mkdir(parents=True, exist_ok=True)
 

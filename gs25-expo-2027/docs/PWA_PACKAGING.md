@@ -161,8 +161,12 @@ curl -si $DOMAIN/icons/icon-maskable-512.png | head -1  # 200
 
 ## 7. 앞으로 손댈 때 주의
 
-- **아이콘을 바꾸면** `public/icons/` 의 PNG 5개를 모두 다시 만들고, 매니페스트의
-  경로도 함께 확인하세요. SVG 만 바꾸면 앱 아이콘은 그대로입니다.
+- **아이콘을 바꾸려면** 원본 한 장만 바꾸고 스크립트를 돌리세요. 파비콘·앱 아이콘·
+  화면 로고가 한 번에 따라옵니다.
+  ```bash
+  python3 scripts/make-icons.py assets/brand/logo-source.png
+  ```
+  이어서 `public/sw.js` 의 `VERSION` 을 올려야 캐시된 옛 아이콘이 버려집니다.
 - **서비스 워커를 고치면** `public/sw.js` 의 `VERSION` 을 올리세요. 올리지 않으면
   옛 캐시가 남습니다.
 - **캐시 대상을 늘리지 마세요.** 상품 정보나 로그인 뒤 화면을 캐시에 넣는 순간
