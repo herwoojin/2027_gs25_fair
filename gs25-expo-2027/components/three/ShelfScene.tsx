@@ -248,7 +248,7 @@ function ProductBox({
       </mesh>
       {hovered && (
         <Html position={[0, 0.62, 0]} center distanceFactor={9} zIndexRange={[20, 0]}>
-          <div className="pointer-events-none whitespace-nowrap rounded-lg bg-gs-ink/92 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lift">
+          <div className="pointer-events-none whitespace-nowrap rounded-lg bg-gs-panel/92 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lift">
             {product.name}
             {done && <span className="ml-1 text-gs-mint">완료</span>}
           </div>

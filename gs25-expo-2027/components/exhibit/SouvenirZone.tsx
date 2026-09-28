@@ -41,7 +41,7 @@ export function SouvenirZone({ section, products }: { section: Section; products
 
   return (
     <div className="space-y-6">
-      <div className="rounded-card bg-gs-ink px-5 py-6 text-white">
+      <div className="rounded-card bg-gs-panel px-5 py-6 text-white">
         <p className="text-sm font-bold text-gs-mint">현장 방문 한정</p>
         <h2 className="mt-1 text-2xl font-bold">무엇이 들어 있을까요?</h2>
         <p className="mt-2 text-white/70">

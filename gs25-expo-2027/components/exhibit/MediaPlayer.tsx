@@ -72,7 +72,7 @@ export function MediaPlayer({
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
   return (
-    <div className="overflow-hidden rounded-card border border-gs-line bg-gs-ink">
+    <div className="overflow-hidden rounded-card border border-gs-line bg-gs-panel">
       <div className="relative aspect-video w-full bg-gradient-to-br from-gs-blue-dark to-gs-ink">
         {hasSrc && kind === 'video' ? (
           <video

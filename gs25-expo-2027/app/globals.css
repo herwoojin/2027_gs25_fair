@@ -23,6 +23,10 @@
     --canvas-bg: 247 250 254;
     --canvas-ink: 14 26 48;
 
+    /* 항상 어두운 패널 — 흰 글자를 얹는 자리(영상 틀·토스트·기념품 안내 등).
+       gs-ink 를 쓰면 밤 모드에서 배경이 밝아져 흰 글자가 사라진다. */
+    --gs-panel: 15 34 62;
+
     --font-scale: 1;
     --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
       'Malgun Gothic', system-ui, sans-serif;
@@ -44,6 +48,7 @@
     --gs-card-bg: 15 25 42;
     --canvas-bg: 5 10 24;
     --canvas-ink: 255 255 255;
+    --gs-panel: 26 42 68;
   }
 
   /* ── 편안한 모드 (세피아/종이 느낌) ── */
@@ -62,6 +67,7 @@
     --gs-card-bg: 250 245 232;
     --canvas-bg: 238 229 208;
     --canvas-ink: 59 47 30;
+    --gs-panel: 58 45 28;
   }
 
   html {

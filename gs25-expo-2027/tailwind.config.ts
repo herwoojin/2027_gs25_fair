@@ -26,6 +26,7 @@ const config: Config = {
           sand: 'rgb(var(--gs-sand) / <alpha-value>)',
           ink: 'rgb(var(--gs-ink) / <alpha-value>)',
           card: 'rgb(var(--gs-card-bg) / <alpha-value>)',
+          panel: 'rgb(var(--gs-panel) / <alpha-value>)',
           bg: 'rgb(var(--gs-bg) / <alpha-value>)',
           muted: 'rgb(var(--gs-muted) / <alpha-value>)',
           line: 'rgb(var(--gs-line) / <alpha-value>)',

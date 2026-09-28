@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 'pointer-events-auto max-w-md rounded-pill px-5 py-3 text-base font-semibold shadow-lift',
                 i.kind === 'success' && 'bg-gs-mint text-gs-ink',
                 i.kind === 'error' && 'bg-state-critical text-white',
-                i.kind === 'info' && 'bg-gs-ink text-white',
+                i.kind === 'info' && 'bg-gs-panel text-white',
               )}
             >
               {i.text}

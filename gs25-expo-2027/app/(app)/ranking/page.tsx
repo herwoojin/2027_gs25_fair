@@ -145,7 +145,9 @@ function PageWrapper({
 function BoardWrapper({ children, tab }: { children: React.ReactNode; tab: TabKey; setTab: (t: TabKey) => void }) {
   const current = TABS.find((t) => t.key === tab)!;
   return (
-    <div className="fixed inset-0 z-[300] overflow-auto bg-gs-ink px-8 py-8 text-white">
+    // 전광판은 현장 프로젝터에 띄우는 화면이라 보기 모드를 따르지 않는다.
+    // gs-ink 를 쓰면 밤 모드에서 배경이 밝아져 흰 글자가 사라진다.
+    <div className="fixed inset-0 z-[300] overflow-auto bg-[#0f223e] px-8 py-8 text-white">
       <div className="mx-auto max-w-5xl">
         <h1 className="mb-6 flex items-center gap-4 text-5xl font-black">
           <span>{current.emoji}</span> {current.label}

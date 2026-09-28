@@ -91,7 +91,7 @@ export function VideoZone({
                       i === current ? 'bg-gs-blue-light' : 'hover:bg-gs-surface'
                     }`}
                   >
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gs-ink text-xs font-bold text-white">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gs-panel text-xs font-bold text-white">
                       {isDone ? <Check size={15} /> : i + 1}
                     </span>
                     <span className="min-w-0 flex-1">

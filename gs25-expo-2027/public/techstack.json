@@ -551,6 +551,41 @@
       ]
     },
     {
+      "name": "보기 모드 · 접근성",
+      "items": [
+        {
+          "name": "보기 모드 3종 (낮·밤·종이)",
+          "purpose": "CSS 변수 토큰으로 화면 전체 색을 전환. 실제로 바뀌는 건 <html data-theme> 하나",
+          "config": "app/globals.css · lib/hooks/useTheme.tsx"
+        },
+        {
+          "name": "테마 사전 스크립트",
+          "purpose": "첫 페인트 전 data-theme 적용 — 흰 화면 번쩍임(FOUC) 제거",
+          "config": "app/layout.tsx"
+        },
+        {
+          "name": "보기 모드 선택 팝업",
+          "purpose": "최초 방문 1회 선택, 24시간 유지",
+          "config": "components/common/ThemePickerPopup.tsx"
+        },
+        {
+          "name": "보기 모드 토글",
+          "purpose": "랜딩 헤더·앱 상단바·관리자 사이드바의 동그란 전환 버튼",
+          "config": "components/common/ThemeToggle.tsx"
+        },
+        {
+          "name": "글자 크게 토글",
+          "purpose": "--font-scale 기반 본문 확대",
+          "config": "components/common/FontSizeToggle.tsx"
+        },
+        {
+          "name": "사이트맵",
+          "purpose": "전체 화면 목록 + 접근 경계(누구나/경영주/본부)",
+          "config": "app/(public)/sitemap/page.tsx · lib/siteMap.ts"
+        }
+      ]
+    },
+    {
       "name": "PWA",
       "items": [
         {

@@ -27,7 +27,7 @@ export default function SouvenirPromoPage() {
 
   return (
     <div className="pb-24">
-      <section className="bg-gs-ink px-5 py-12 text-center text-white">
+      <section className="bg-gs-panel px-5 py-12 text-center text-white">
         <p className="text-sm font-bold text-gs-mint">현장에서만 받을 수 있어요</p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">기념품 {items.length}종</h1>
         <p className="mx-auto mt-3 max-w-md text-white/70">

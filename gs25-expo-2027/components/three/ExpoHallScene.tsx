@@ -228,7 +228,7 @@ function ZoneBlock({
             {section.title}
           </div>
           {hovered && (
-            <div className="mt-1 rounded-lg bg-gs-ink/92 px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lift">
+            <div className="mt-1 rounded-lg bg-gs-panel/92 px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lift">
               <div>{stamped ? '스탬프 획득 완료' : '아직 스탬프 전'}</div>
               <div className="text-white/70">예상 {section.estMinutes}분</div>
             </div>
