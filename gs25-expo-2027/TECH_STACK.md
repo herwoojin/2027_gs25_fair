@@ -3,7 +3,7 @@
 > 전국 9개 도시 순회 공유회와 **동일한 동선·진열을 3D 웹으로 재현**한 폐쇄형 전시 플랫폼.
 > 사전 등록 경영주만 로그인해 섹션별 상품을 듣고·읽고·퀴즈를 풀어 **스탬프 11개**를 모은다.
 >
-> **마지막 업데이트: 2026-09-27** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
+> **마지막 업데이트: 2026-09-28** · 머신용 원본은 [`public/techstack.json`](public/techstack.json)
 >
 > Firebase 프로젝트: **`gs25-fair`** (2027-gs25-fair · 270897004705 · doridorimammam-org)
 
@@ -77,6 +77,24 @@ flowchart TB
 | gltf-transform CLI | — | GLB 최적화 | `public/models/README.md` | 섹션당 ≤3MB, 삼각형 ≤10만 |
 
 **성능 규칙** — 모바일 DPR 최대 1.5, 그림자는 데스크톱만, 조감도 좌우 회전 ±30°, 섹션별 지연 로딩(`next/dynamic`).
+
+### 2.2-B 온라인 전시장 (별도 앱)
+
+아바타로 직접 걸어 다니는 전시장. **이 저장소가 아니라 `DESK_RPG` 앱**에 있고, 랜딩의
+「전시 입장하기」가 새 창으로 띄운다. 3D 전시장(2.2)과는 용도가 다르다 — 이쪽은 관람 동선,
+저쪽은 진열 실물 확인이다.
+
+| 이름 | 버전 | 용도 | 위치 | 비고 |
+|---|---|---|---|---|
+| Phaser | 3.90 | 탑다운 렌더링·물리·입력 | `DESK_RPG/src/game/scenes/exhibition/ExhibitionScene.ts` | `dynamic({ssr:false})` 필수 |
+| LPC 스프라이트 합성 | 자체 | 체형·피부·머리·복장 → 576×256 워크시트 | `DESK_RPG/src/lib/sprite-compositor.ts` | 디코딩까지 React 에서 끝내고 넘김 |
+| zones.ts | 자체 | 11개 존 좌표 | `DESK_RPG/src/lib/exhibition/zones.ts` | `SECTIONS[].hallPosition` 과 같은 값 |
+| EventBus | 자체 | React ↔ Phaser 다리 | `DESK_RPG/src/game/EventBus.ts` | 존 진입/이탈/준비완료만 오감 |
+| `NEXT_PUBLIC_EXHIBITION_URL` | — | 새 창으로 열 전시장 주소 | `components/public/GuideMap.tsx` | 비우면 `/login` 으로 폴백 |
+
+**1단계 범위** — 새 창 진입 · 아바타 선택 · 전시장 이동 · 존 진입 인식까지. 존 콘텐츠와
+퀴즈·스탬프는 2단계(`CONTENT_READY`)다. 그래서 지금은 인증 게이트 없이 열어도 새 나갈 내용이
+없지만, **2단계에서 콘텐츠를 붙이기 전에 경영주 로그인 게이트를 먼저 달아야 한다.**
 
 ### 2.2-A 모션 · 연출
 

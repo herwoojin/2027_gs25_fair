@@ -19,6 +19,28 @@ import { Reveal } from '@/components/common/Reveal';
  *   2) 그 궁금함을 오프라인 순회 참석으로 잇는다.
  */
 
+/**
+ * 온라인 전시장 주소. 전시장은 별도 앱(Phaser)이라 도메인이 다르다.
+ * 값이 없으면 예전처럼 로그인으로 보낸다 — 주소를 넣기 전에 죽은 버튼이 되면 안 된다.
+ */
+const EXHIBITION_URL = process.env.NEXT_PUBLIC_EXHIBITION_URL ?? '';
+
+/** 전시장은 새 창으로 연다. 랜딩은 그대로 두고 돌아올 자리를 남긴다. */
+function openExhibition() {
+  const w = Math.min(1440, window.screen.availWidth);
+  const h = Math.min(900, window.screen.availHeight);
+  const left = Math.max(0, (window.screen.availWidth - w) / 2);
+  const top = Math.max(0, (window.screen.availHeight - h) / 2);
+  const win = window.open(
+    EXHIBITION_URL,
+    'gs25-exhibition',
+    `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=no`,
+  );
+  // 팝업이 막히면 현재 탭으로라도 보낸다
+  if (win) win.focus();
+  else window.location.href = EXHIBITION_URL;
+}
+
 // ── 아이소메트릭 투영 ────────────────────────────────────────────
 const COS30 = Math.cos(Math.PI / 6);
 const S = 17; // 1m 당 픽셀
@@ -439,9 +461,20 @@ export function GuideMap({ accent }: { accent: string }) {
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
-              <Link href="/login" className="gs-btn text-white" style={{ background: accent }}>
-                전시 입장하기 <ArrowRight size={17} />
-              </Link>
+              {EXHIBITION_URL ? (
+                <button
+                  type="button"
+                  onClick={openExhibition}
+                  className="gs-btn text-white"
+                  style={{ background: accent }}
+                >
+                  전시 입장하기 <ArrowRight size={17} />
+                </button>
+              ) : (
+                <Link href="/login" className="gs-btn text-white" style={{ background: accent }}>
+                  전시 입장하기 <ArrowRight size={17} />
+                </Link>
+              )}
               <a
                 href="#cities"
                 className="gs-btn border border-white/20 text-white/85 transition hover:bg-white/10"

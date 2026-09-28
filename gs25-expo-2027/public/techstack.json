@@ -1,7 +1,7 @@
 {
   "project": "2027 GS25 상품전략공유회 온라인 전시 플랫폼",
   "description": "전국 9개 도시 순회 오프라인 공유회와 동일한 동선·진열을 3D 웹앱으로 재현한 폐쇄형 온라인 전시 플랫폼. 사전 등록된 GS25 경영주만 로그인해 섹션별 상품 설명을 듣고·읽고·퀴즈를 풀어 스탬프 11개를 모은다.",
-  "lastUpdated": "2026-09-27",
+  "lastUpdated": "2026-09-28",
   "repo": "gs25-expo-2027",
   "reference": "2026년판 25fair.vercel.app — 카메라 스플라인 투어 · 도시별 accent 리테마 · 시네마틱 질감(레터박스/그레인/비네트) 연출 문법을 참조해 2027 랜딩에 이식",
   "architectureSummary": "Next.js 14(App Router) 프런트엔드 + Firebase(Auth/Firestore/Functions 2nd gen/Storage/App Check) 백엔드. 스탬프·퀴즈 채점·SMS·AI 호출은 전부 Cloud Functions(asia-northeast3)에서만 수행하고, 클라이언트는 Firestore 보안 규칙으로 최소 권한만 갖는다. 랭킹·워드클라우드·통계는 스케줄 함수가 aggregates/* 단일 문서로 요약해 동시접속 3,000명에서도 읽기 비용을 억제한다. 로컬 개발에서는 Firebase 없이도 동일한 서버 판정을 재현하는 Next API Route 백엔드(lib/server/**)로 폴백한다.",
@@ -84,6 +84,37 @@
           "version": "—",
           "purpose": "GLB Draco/Meshopt/KTX2 최적화(섹션당 ≤3MB)",
           "config": "public/models/README.md"
+        }
+      ]
+    },
+    {
+      "name": "온라인 전시장 (별도 앱)",
+      "items": [
+        {
+          "name": "Phaser",
+          "version": "3.90",
+          "purpose": "아바타로 걸어 다니는 탑다운 전시장 렌더링·물리·입력",
+          "config": "DESK_RPG/src/game/scenes/exhibition/ExhibitionScene.ts"
+        },
+        {
+          "name": "LPC 스프라이트 합성 (자체 구현)",
+          "purpose": "입장 전 고른 체형·피부·머리·복장을 576x256 워크시트로 합성",
+          "config": "DESK_RPG/src/lib/sprite-compositor.ts"
+        },
+        {
+          "name": "존 좌표 공유 (zones.ts)",
+          "purpose": "가이드맵 SECTIONS[].hallPosition 과 같은 좌표를 써 배치를 한 벌로 유지",
+          "config": "DESK_RPG/src/lib/exhibition/zones.ts"
+        },
+        {
+          "name": "EventBus (React ↔ Phaser)",
+          "purpose": "존 진입·이탈·준비완료만 이벤트로 주고받고 서로의 내부는 건드리지 않음",
+          "config": "DESK_RPG/src/game/EventBus.ts"
+        },
+        {
+          "name": "NEXT_PUBLIC_EXHIBITION_URL",
+          "purpose": "랜딩 「전시 입장하기」가 새 창으로 열 전시장 주소. 비우면 /login 으로 폴백",
+          "config": "components/public/GuideMap.tsx"
         }
       ]
     },
