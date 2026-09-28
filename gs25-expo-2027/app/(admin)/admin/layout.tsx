@@ -11,6 +11,7 @@ import {
   LayoutList,
   LogOut,
   MessageCircleQuestion,
+  MessageSquare,
   Radio,
   ShieldCheck,
   Ticket,
@@ -33,6 +34,7 @@ const MENU: { href: string; label: string; icon: React.ElementType; roles: Role[
   { href: '/admin/live', label: '라이브 편성', icon: Radio, roles: ['admin', 'md'] },
   { href: '/admin/content', label: '콘텐츠', icon: LayoutList, roles: ['admin'] },
   { href: '/admin/whitelist', label: '화이트리스트', icon: ShieldCheck, roles: ['admin'] },
+  { href: '/admin/sms', label: '문자 발송', icon: MessageSquare, roles: ['admin'] },
   { href: '/admin/audit', label: '감사 로그', icon: FileText, roles: ['admin'] },
   { href: '/admin/techstack', label: '기술 스택', icon: Layers, roles: ['admin'] },
 ];
