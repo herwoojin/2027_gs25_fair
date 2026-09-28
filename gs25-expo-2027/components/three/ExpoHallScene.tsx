@@ -97,10 +97,14 @@ function HallContent({ sections, stamps, nextSectionId, onSelect, quality }: Hal
       <gridHelper args={[76, 38, '#dbe5f2', '#eaf0f8']} position={[0, 0, 0]} />
 
       {/* 입구 → 퇴점 동선 */}
-      <Line points={path} color="#00c2a8" lineWidth={3} dashed dashSize={0.9} gapSize={0.6} />
-      <Text position={[path[0].x, 0.4, path[0].z + 6.5]} rotation={[-Math.PI / 2, 0, 0]} fontSize={1.1} color="#0056b3">
-        입구
-      </Text>
+      {path.length >= 2 && (
+        <Line points={path} color="#00c2a8" lineWidth={3} dashed dashSize={0.9} gapSize={0.6} />
+      )}
+      {path.length > 0 && (
+        <Text position={[path[0].x, 0.4, path[0].z + 6.5]} rotation={[-Math.PI / 2, 0, 0]} fontSize={1.1} color="#0056b3">
+          입구
+        </Text>
+      )}
 
       {/* 앰비언트 모션 — 고사양 기기에서만 (저사양은 정적 유지) */}
       {quality === 'high' && (
