@@ -44,3 +44,27 @@
   for = "/api/*"
   [headers.values]
     Cache-Control = "no-store, max-age=0"
+
+# ── 설치형 앱(PWA / Play TWA) ────────────────────────────────────────
+# 서비스 워커는 절대 캐시하면 안 된다. 낡은 워커가 남으면 새 배포가 사용자에게
+# 영영 닿지 않는다. Service-Worker-Allowed 로 루트 스코프도 허용한다.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# TWA 가 주소창 없이 열리려면 이 파일이 JSON 으로 200 이어야 한다.
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "public, max-age=300"
+    # 구글이 크롤러로 읽어 가므로 noindex 헤더를 덮어써 둔다
+    X-Robots-Tag = "noarchive"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=3600"

@@ -595,15 +595,28 @@
       "items": [
         {
           "name": "Web App Manifest",
-          "version": "—",
-          "purpose": "홈 화면 추가, standalone 실행",
+          "purpose": "설치형 앱 메타데이터 — id·screenshots·shortcuts·maskable 아이콘까지 PWABuilder 기준 충족",
           "config": "public/manifest.json"
         },
         {
-          "name": "콘텐츠 비캐시 정책",
-          "version": "—",
-          "purpose": "/api/* Cache-Control: no-store — 상품 데이터 캐시 금지",
-          "config": "next.config.js"
+          "name": "서비스 워커 (오프라인 전용)",
+          "purpose": "앱 설치 요건 충족용. /api 와 HTML 은 캐시하지 않는다 — 대외비 화면을 기기에 남기지 않기 위해",
+          "config": "public/sw.js"
+        },
+        {
+          "name": "오프라인 안내 페이지",
+          "purpose": "연결이 끊겼을 때만 뜬다. 외부 의존 없이 혼자 완결",
+          "config": "public/offline.html"
+        },
+        {
+          "name": "Digital Asset Links",
+          "purpose": "구글 플레이 TWA 가 주소창 없이 열리기 위한 소유 증명 (지문 입력 필요)",
+          "config": "public/.well-known/assetlinks.json"
+        },
+        {
+          "name": "PNG 아이콘 세트",
+          "purpose": "192/512/maskable/apple-touch — PWABuilder 는 SVG 를 받지 않는다",
+          "config": "public/icons/"
         }
       ]
     }

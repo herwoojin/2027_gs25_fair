@@ -1,16 +1,73 @@
 {
+  "id": "/?source=pwa",
   "name": "2027 GS25 상품전략공유회",
   "short_name": "GS25 공유회",
-  "description": "등록된 경영주 전용 온라인 전시 플랫폼",
-  "start_url": "/lobby",
+  "description": "전국 9개 도시 순회와 온라인 전시를 함께 보는 GS25 경영주 전용 상품전략공유회 플랫폼입니다.",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#0056b3",
   "lang": "ko",
+  "dir": "ltr",
+  "categories": ["business", "education"],
+  "prefer_related_applications": false,
   "icons": [
-    { "src": "/icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "순회 일정과 전시 안내를 한눈에 봅니다"
+    },
+    {
+      "src": "/screenshots/mobile-guide.png",
+      "sizes": "412x915",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "11개 존 가이드맵으로 관람 동선을 미리 봅니다"
+    },
+    {
+      "src": "/screenshots/desktop-home.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "전국 9개 도시 순회 일정"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "전시 로비",
+      "short_name": "로비",
+      "description": "온라인 전시장에 바로 들어갑니다",
+      "url": "/lobby?source=pwa",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "순회 일정",
+      "short_name": "일정",
+      "description": "가까운 도시의 일정과 오시는 길을 봅니다",
+      "url": "/offline?source=pwa",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "내 입장 QR",
+      "short_name": "입장 QR",
+      "description": "현장 입장 QR 코드를 엽니다",
+      "url": "/my?source=pwa",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

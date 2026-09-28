@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>연결이 끊겼습니다 · 2027 GS25 상품전략공유회</title>
+    <!--
+      오프라인 안내.
+
+      서비스 워커가 미리 받아 두는 유일한 화면이라 **혼자서 완결**돼야 한다.
+      외부 글꼴·스크립트·이미지를 쓰지 않는다. 끊긴 상태에서 불러올 수 없기 때문이다.
+    -->
+    <style>
+      :root {
+        --blue: #0056b3;
+        --mint: #00c2a8;
+        --ink: #0f223e;
+        --muted: #62748d;
+        --bg: #ffffff;
+        --card: #f7fafe;
+        --line: #e0e7f0;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #e6edf5;
+          --muted: #8c9eb4;
+          --bg: #0a1220;
+          --card: #0f192a;
+          --line: #23344e;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo',
+          'Malgun Gothic', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .card {
+        width: 100%;
+        max-width: 26rem;
+        text-align: center;
+      }
+      .mark {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        border-radius: 16px;
+        background: var(--blue);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-weight: 900;
+        font-size: 22px;
+        letter-spacing: 0.5px;
+      }
+      h1 { margin: 0 0 8px; font-size: 1.5rem; font-weight: 800; }
+      p { margin: 0; color: var(--muted); line-height: 1.7; font-size: 0.95rem; }
+      ul {
+        margin: 20px 0 0;
+        padding: 16px 20px;
+        list-style: none;
+        text-align: left;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.9;
+      }
+      li::before { content: '· '; color: var(--mint); font-weight: 900; }
+      button {
+        margin-top: 20px;
+        width: 100%;
+        min-height: 48px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 800;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      button:active { transform: scale(0.99); }
+      .note { margin-top: 14px; font-size: 0.8rem; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="mark">GS</div>
+      <h1>연결이 끊겼습니다</h1>
+      <p>인터넷에 연결되어 있지 않아 화면을 불러오지 못했습니다.</p>
+      <ul>
+        <li>와이파이 또는 데이터가 켜져 있는지 확인해 주세요</li>
+        <li>지하·엘리베이터 등 전파가 약한 곳은 잠시 이동해 주세요</li>
+        <li>연결되면 아래 버튼으로 다시 시도해 주세요</li>
+      </ul>
+      <button type="button" onclick="location.reload()">다시 시도</button>
+      <p class="note">
+        전시 내용은 보안을 위해 기기에 저장하지 않습니다. 연결된 상태에서만 보실 수 있습니다.
+      </p>
+    </div>
+  </body>
+</html>

@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { ServerBattery } from '@/components/common/ServerBattery';
 import { THEME_BOOTSTRAP_SCRIPT } from '@/lib/hooks/useTheme';
+import { ServiceWorker } from '@/components/common/ServiceWorker';
 
 export const metadata: Metadata = {
   title: '2027 GS25 상품전략공유회',
@@ -15,7 +16,20 @@ export const metadata: Metadata = {
   },
   manifest: '/manifest.json',
   applicationName: 'GS25 공유회',
-  appleWebApp: { capable: true, title: 'GS25 공유회', statusBarStyle: 'default' },
+  appleWebApp: {
+    capable: true,
+    title: 'GS25 공유회',
+    // 'default' 는 상태바가 흰 배경에 검은 글씨다. 어두운 모드로 들어가면 글자가 묻혀
+    // 'black-translucent' 로 두고, 콘텐츠는 safe-area 로 피한다.
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    icon: [
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
   // appleWebApp 은 apple- 접두사 meta 만 만든다. 표준 이름도 함께 넣어야
   // 크롬의 deprecation 경고가 사라지고 안드로이드 홈화면 추가가 정상 동작한다.
   other: { 'mobile-web-app-capable': 'yes' },
@@ -43,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <Providers>{children}</Providers>
         <ServerBattery />
+        <ServiceWorker />
       </body>
     </html>
   );
